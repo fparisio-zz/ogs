@@ -37,6 +37,8 @@ namespace MaterialLib
 {
 namespace Solids
 {
+namespace Ehlers
+{
 
 template <int DisplacementDim>
 class SolidEhlers final : public MechanicsBase<DisplacementDim>
@@ -208,6 +210,7 @@ private:
     MaterialProperties _mp;
 };
 
+}  // namespace Ehlers
 }  // namespace Solids
 }  // namespace MaterialLib
 #include "Ehlers-impl.h"
