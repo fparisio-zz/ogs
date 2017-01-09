@@ -19,6 +19,8 @@ namespace MaterialLib
 {
 namespace Solids
 {
+namespace Ehlers
+{
 template <int DisplacementDim>
 std::unique_ptr<MechanicsBase<DisplacementDim>> createEhlers(
     std::vector<std::unique_ptr<ProcessLib::ParameterBase>> const& parameters,
@@ -148,5 +150,6 @@ std::unique_ptr<MechanicsBase<DisplacementDim>> createEhlers(
         new SolidEhlers<DisplacementDim>{mp}};
 }
 
+}  // namespace Ehlers
 }  // namespace Solids
 }  // namespace MaterialLib

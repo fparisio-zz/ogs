@@ -36,10 +36,13 @@
 #include <logog/include/logog.hpp>
 #include "MaterialLib/SolidModels/KelvinVector.h"
 #include "NumLib/NewtonRaphson.h"
+#include "PhysicalStressWithInvariants.h"
 
 namespace MaterialLib
 {
 namespace Solids
+{
+namespace Ehlers
 {
 template <int DisplacementDim>
 struct PhysicalStressWithInvariants final
@@ -80,7 +83,7 @@ struct OnePlusGamma_pTheta final
     OnePlusGamma_pTheta(double const gamma_p, double const theta,
                         double const m_p)
         : value{1 + gamma_p * theta},
-          pow_m_p{std::pow(value, m_p)},
+           pow_m_p{std::pow(value, m_p)},
           pow_m_p1{pow_m_p / value}
     {
     }
@@ -654,5 +657,6 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
     return true;
 }
 
+}  // namespace Ehlers
 }  // namespace Solids
 }  // namespace MaterialLib
