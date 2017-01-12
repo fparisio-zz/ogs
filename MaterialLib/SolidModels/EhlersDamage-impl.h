@@ -20,6 +20,7 @@
  * eps_p_eff_dot    - increment of effective plastic strain
  * eps_p_V_dot      - volumetric increment of plastic strain
  * sigma_D_inverse_D - deviatoric part of sigma_D_inverse
+ * damage           - isotropic damage parameter
  *
  * derivation of the flow rule
  * theta            - J3 / J2^(3 / 2) from yield function
@@ -69,6 +70,7 @@ typename SolidEhlersDamage<DisplacementDim>::KelvinVector plasticFlowDeviatoricP
             (s.D + s.J_2 * m_p * gamma_p * dtheta_dsigma / one_gt.value)) /
            (2 * sqrtPhi);
 }
+
 template <int DisplacementDim>
 double yieldFunction(
     PhysicalStressWithInvariants<DisplacementDim> const& s,
@@ -505,8 +507,14 @@ bool SolidEhlersDamage<DisplacementDim>::computeConstitutiveRelation(
     double const G = _mp.G(t, x)[0];
     double const K = _mp.K(t, x)[0];
 
+    double const alpha_d = _mp.alpha_d(t, x)[0];
+    double const beta_d  = _mp.beta_d(t, x)[0];
+
+    // compute sigma_eff from damage total stress sigma
+    // sigma_eff=(1-damage)*sigma_prev
+    KelvinVector sigma_eff_prev=sigma_prev/(1.-_state.damage_prev);
     KelvinVector sigma =
-        predict_sigma<DisplacementDim>(G, K, sigma_prev, eps, eps_prev, eps_V);
+        predict_sigma<DisplacementDim>(G, K, sigma_eff_prev, eps, eps_prev, eps_V);
 
     // update parameter
     _mp.calculateIsotropicHardening(t, x, _state.eps_p_eff);
@@ -605,8 +613,12 @@ bool SolidEhlersDamage<DisplacementDim>::computeConstitutiveRelation(
                 .template block<KelvinVectorSize, KelvinVectorSize>(0, 0);
     }
 
+    // Compute damage current step
+    _state.damage=(1.-beta_d)*(1.-exp(-(_state.eps_p_eff)/alpha_d));
+    // compute sigma total from damage effective stress sigma_eff
     // Update sigma.
-    sigma_final.noalias() = G * sigma;
+    sigma_final.noalias() = G * sigma*(1.-_state.damage);
+
     return true;
 }
 
