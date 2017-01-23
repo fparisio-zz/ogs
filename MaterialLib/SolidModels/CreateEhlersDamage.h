@@ -153,11 +153,17 @@ std::unique_ptr<MechanicsBase<DisplacementDim>> createEhlersDamage(
 
     DBUG("Use \'%s\' as beta_d parameter.", beta_d.name.c_str());
 
+    //! \ogs_file_param_special{material__solid__constitutive_relation__EhlersDamage__beta_d}
+    auto& h_d = ProcessLib::findParameter<double>(
+    config, "h_d", parameters, 1);
+
+    DBUG("Use \'%s\' as h_d parameter.", h_d.name.c_str());
+
     typename SolidEhlersDamage<DisplacementDim>::MaterialProperties mp{
         shear_modulus, bulk_modulus, alpha,  beta,
         gamma,         delta,        eps,    m,
         alphap,        betap,        gammap, deltap,
-        epsp,          paremeter_mp, kappa,  hardening_modulus, alpha_d, beta_d};
+        epsp,          paremeter_mp, kappa,  hardening_modulus, alpha_d, beta_d, h_d};
 
     return std::unique_ptr<MechanicsBase<DisplacementDim>>{
         new SolidEhlersDamage<DisplacementDim>{mp}};

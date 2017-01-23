@@ -77,7 +77,8 @@ public:
                            P const& m_p_, P const& kappa_,
                            P const& hardening_coefficient_,
                            P const& alpha_d_,
-                           P const& beta_d_)
+                           P const& beta_d_,
+                           P const& h_d_)
             : G(G_),
               K(K_),
               alpha(alpha_),
@@ -95,7 +96,8 @@ public:
               kappa(kappa_),
               hardening_coefficient(hardening_coefficient_),
               alpha_d(alpha_d_),
-              beta_d(beta_d_)
+              beta_d(beta_d_),
+              h_d(h_d_)
         {
         }
         // basic material parameters
@@ -120,6 +122,7 @@ public:
         P const& hardening_coefficient;
         P const& alpha_d;
         P const& beta_d;
+        P const& h_d;
         // Drucker-Prager: Import kappa and beta in terms of Drucker-Prager
         // criterion solution dependent values
         double k;
