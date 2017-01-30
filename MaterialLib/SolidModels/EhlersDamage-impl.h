@@ -46,7 +46,6 @@ namespace Solids
 {
 namespace EhlersDamage
 {
-
 template <int DisplacementDim>
 double plasticFlowVolumetricPart(
     PhysicalStressWithInvariants<DisplacementDim> const& s,
@@ -60,10 +59,12 @@ double plasticFlowVolumetricPart(
 }
 
 template <int DisplacementDim>
-typename SolidEhlersDamage<DisplacementDim>::KelvinVector plasticFlowDeviatoricPart(
+typename SolidEhlersDamage<DisplacementDim>::KelvinVector
+plasticFlowDeviatoricPart(
     PhysicalStressWithInvariants<DisplacementDim> const& s,
     OnePlusGamma_pTheta const& one_gt, double const sqrtPhi,
-    typename SolidEhlersDamage<DisplacementDim>::KelvinVector const& dtheta_dsigma,
+    typename SolidEhlersDamage<DisplacementDim>::KelvinVector const&
+        dtheta_dsigma,
     double const gamma_p, double const m_p)
 {
     return (one_gt.pow_m_p *
@@ -466,8 +467,8 @@ typename SolidEhlersDamage<DisplacementDim>::KelvinVector predict_sigma(
     // dimensioness hydrostatic stress increment
     double const pressure = pressure_prev - K / G * (eps_V - e_prev);
     // dimensionless deviatoric initial stress
-    typename SolidEhlersDamage<DisplacementDim>::KelvinVector const sigma_D_prev =
-        P_dev * sigma_prev / G;
+    typename SolidEhlersDamage<DisplacementDim>::KelvinVector const
+        sigma_D_prev = P_dev * sigma_prev / G;
     // dimensionless deviatoric stress
     typename SolidEhlersDamage<DisplacementDim>::KelvinVector const sigma_D =
         sigma_D_prev + 2 * P_dev * (eps - eps_prev);
@@ -508,21 +509,14 @@ bool SolidEhlersDamage<DisplacementDim>::computeConstitutiveRelation(
     double const K = _mp.K(t, x)[0];
 
     double const alpha_d = _mp.alpha_d(t, x)[0];
-    double const beta_d  = _mp.beta_d(t, x)[0];
-    double const h_d  = _mp.h_d(t, x)[0];
-
-    double const alpha_p  = _mp.alpha_p(t, x)[0];
-    double const beta_p  = _mp.beta_p(t, x)[0];
-    double const gamma_p  = _mp.gamma_p(t, x)[0];
-    double const delta_p  = _mp.delta_p(t, x)[0];
-    double const epsilon_p  = _mp.epsilon_p(t, x)[0];
-    double const m_p  = _mp.m_p(t, x)[0];
+    double const beta_d = _mp.beta_d(t, x)[0];
+    double const h_d = _mp.h_d(t, x)[0];
 
     // compute sigma_eff from damage total stress sigma
     // sigma_eff=(1-damage)*sigma_prev
-    KelvinVector sigma_eff_prev=sigma_prev/(1.-_state.damage_prev);
-    KelvinVector sigma =
-        predict_sigma<DisplacementDim>(G, K, sigma_eff_prev, eps, eps_prev, eps_V);
+    KelvinVector sigma_eff_prev = sigma_prev / (1. - _state.damage_prev);
+    KelvinVector sigma = predict_sigma<DisplacementDim>(G, K, sigma_eff_prev,
+                                                        eps, eps_prev, eps_V);
 
     // update parameter
     _mp.calculateIsotropicHardening(t, x, _state.eps_p_eff);
@@ -620,96 +614,74 @@ bool SolidEhlersDamage<DisplacementDim>::computeConstitutiveRelation(
             linear_solver.solve(-dresidual_deps)
                 .template block<KelvinVectorSize, KelvinVectorSize>(0, 0);
     }
-    Eigen::Matrix<double,DisplacementDim,DisplacementDim> eps_p_dot
-                = Eigen::Matrix<double,DisplacementDim,DisplacementDim>::Zero();
 
-        using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;
+    using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;
 
-        auto const& identity2 = Invariants::identity2;
-        auto const lambda=_state.lambda;
+    KelvinVector const eps_p_D_dot =
+        (_state.eps_p_D - _state.eps_p_D_prev) / dt;
+    double const eps_p_V_dot = (_state.eps_p_V - _state.eps_p_V_prev) / dt;
+    double const eps_p_eff_dot =
+        (_state.eps_p_eff - _state.eps_p_eff_prev) / dt;
 
-        double const theta = s.J_3 / boost::math::pow<3>(std::sqrt(s.J_2));
-        OnePlusGamma_pTheta const one_gt{gamma_p, theta, m_p};
+    Eigen::Matrix<double, DisplacementDim, DisplacementDim> eps_p_dot =
+        Eigen::Matrix<double, DisplacementDim, DisplacementDim>::Zero();
 
-        // inverse of deviatoric stress tensor
-        if (Invariants::determinant(s.D) == 0)
+    for (int i = 0; i < DisplacementDim; ++i)
+        for (int j = 0; j < DisplacementDim; ++j)
         {
-            OGS_FATAL("Determinant is zero. Matrix is non-invertible.");
-        }
-        // inverse of sigma_D
-        KelvinVector const sigma_D_inverse = MaterialLib::SolidModels::inverse(s.D);
-        KelvinVector const sigma_D_inverse_D = P_dev * sigma_D_inverse;
-
-        KelvinVector const dtheta_dsigma =
-            theta * sigma_D_inverse_D - 3. / 2. * theta / s.J_2 * s.D;
-
-        // deviatoric flow
-        double const sqrtPhi = std::sqrt(
-            s.J_2 * one_gt.pow_m_p + alpha_p / 2. * boost::math::pow<2>(s.I_1) +
-            boost::math::pow<2>(delta_p) * boost::math::pow<4>(s.I_1));
-
-        double const gm_p = gamma_p * m_p;
-        // intermediate variable for derivative of deviatoric flow
-        KelvinVector const M0 = s.J_2 / one_gt.value * dtheta_dsigma;
-        // derivative of Phi w.r.t. sigma
-        KelvinVector const dPhi_dsigma =
-            one_gt.pow_m_p * (s.D + gm_p * M0) +
-            (alpha_p * s.I_1 +
-             4 * boost::math::pow<2>(delta_p) * boost::math::pow<3>(s.I_1)) *
-                identity2;
-
-       KelvinVector const plastic_strain=lambda*(1./(2.*sqrtPhi)*dPhi_dsigma+beta_p*identity2
-                                                  +2.*epsilon_p*s.I_1*identity2);
-
-        for (int i=0;i<DisplacementDim;++i)
-            for (int j=0;j<DisplacementDim;++j){
-                    if (i==j){
-                eps_p_dot(i,j)=plastic_strain(i);
-                    }else{
-                eps_p_dot(i,j)=plastic_strain(i+j+2);
-                    };
+            if (i == j)
+            {
+                eps_p_dot(i, j) = eps_p_D_dot(i) + 1. / 3. * (eps_p_V_dot);
+            }
+            else
+            {
+                eps_p_dot(i, j) = eps_p_D_dot(i + j + 2);
             };
+        };
 
-        Eigen::EigenSolver<decltype(eps_p_dot)> eigen_solver(eps_p_dot);
-        auto const& principal_strain=eigen_solver.eigenvalues();
+    Eigen::EigenSolver<decltype(eps_p_dot)> eigen_solver(eps_p_dot);
+    auto const& principal_strain = eigen_solver.eigenvalues();
 
-        // building kappa_d (damage driving variable)
-        double eps_p_V_n=0.;
-        for (int i=0;i<DisplacementDim;++i){
-            Eigen::Matrix<double,DisplacementDim,1> eig_val;
-            eig_val(i,0)=real(principal_strain(i,0));
-            if (eig_val(i,0)<=0.){
-                eps_p_V_n=eps_p_V_n+eig_val(i,0);
-            }
-            else{
-            }
-                }
+    // building kappa_d (damage driving variable)
+    double eps_p_V_n = 0.;
+    for (int i = 0; i < DisplacementDim; ++i)
+    {
+        Eigen::Matrix<double, DisplacementDim, 1> eig_val;
+        eig_val(i, 0) = real(principal_strain(i, 0));
+        if (eig_val(i, 0) <= 0.)
+        {
+            eps_p_V_n = eps_p_V_n + eig_val(i, 0);
+        }
+    }
 
     // Different expressions for the damage driving variable will be tested here
     // brittlness control variable omt
     // Compute damage current step
-    double x_s=0.;
-    if ((_state.eps_p_V-_state.eps_p_V)>0.){
-    double const r_s=eps_p_V_n/((_state.eps_p_V-_state.eps_p_V_prev));
-
-    if(r_s<1.)
+    double x_s = 0.;
+    if (eps_p_V_dot > 0.)
     {
-        x_s=1.+h_d*r_s*r_s;
+        double const r_s = eps_p_V_dot / (eps_p_eff_dot);
+
+        if (r_s < 1.)
+        {
+            x_s = 1. + h_d * r_s * r_s;
+        }
+        else
+        {
+            x_s = 1. - 3. * h_d + 4. * h_d * std::sqrt(r_s);
+        }
+        _state.kappa_d = _state.kappa_d_prev + (eps_p_V_dot) / x_s;
     }
     else
     {
-        x_s=1.-3.*h_d+4.*h_d*std::sqrt(r_s);
-    }
-    _state.kappa_d=_state.kappa_d_prev+((_state.eps_p_V-_state.eps_p_V_prev))/x_s;
-    }else{
-    _state.kappa_d=_state.kappa_d_prev;
+        _state.kappa_d = _state.kappa_d_prev;
     }
 
-    _state.damage=(1.-beta_d)*(1.-exp(-(_state.kappa_d)/alpha_d));
+    _state.damage = (1. - beta_d) * (1. - exp(-(_state.kappa_d) / alpha_d));
 
     // compute sigma total from damage effective stress sigma_eff
     // Update sigma.
-    sigma_final.noalias() = G * sigma*(1.-_state.damage);
+    sigma_final.noalias() = G * sigma * (1. - _state.damage);
 
     return true;
 }
