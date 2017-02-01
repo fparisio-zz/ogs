@@ -660,7 +660,7 @@ bool SolidEhlersDamage<DisplacementDim>::computeConstitutiveRelation(
     double x_s = 0.;
     if (eps_p_V_dot > 0.)
     {
-        double const r_s = eps_p_V_dot / (eps_p_eff_dot);
+        double const r_s = eps_p_eff_dot / (eps_p_V_dot);
 
         if (r_s < 1.)
         {
@@ -670,7 +670,7 @@ bool SolidEhlersDamage<DisplacementDim>::computeConstitutiveRelation(
         {
             x_s = 1. - 3. * h_d + 4. * h_d * std::sqrt(r_s);
         }
-        _state.kappa_d = _state.kappa_d_prev + (eps_p_V_dot) / x_s;
+        _state.kappa_d = _state.kappa_d_prev + (eps_p_eff_dot) / x_s;
     }
     else
     {
