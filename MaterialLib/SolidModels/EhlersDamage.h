@@ -39,7 +39,6 @@ namespace Solids
 {
 namespace EhlersDamage
 {
-
 template <int DisplacementDim>
 class SolidEhlersDamage final : public MechanicsBase<DisplacementDim>
 {
@@ -75,10 +74,8 @@ public:
                            P const& beta_p_, P const& gamma_p_,
                            P const& delta_p_, P const& epsilon_p_,
                            P const& m_p_, P const& kappa_,
-                           P const& hardening_coefficient_,
-                           P const& alpha_d_,
-                           P const& beta_d_,
-                           P const& h_d_)
+                           P const& hardening_coefficient_, P const& alpha_d_,
+                           P const& beta_d_, P const& h_d_)
             : G(G_),
               K(K_),
               alpha(alpha_),
@@ -145,8 +142,8 @@ public:
             eps_p_D = eps_p_D_prev;
             eps_p_V = eps_p_V_prev;
             eps_p_eff = eps_p_eff_prev;
-            kappa_d=kappa_d_prev;
-            damage=damage_prev;
+            kappa_d = kappa_d_prev;
+            damage = damage_prev;
             lambda = 0;
         }
 
@@ -155,8 +152,8 @@ public:
             eps_p_D_prev = eps_p_D;
             eps_p_V_prev = eps_p_V;
             eps_p_eff_prev = eps_p_eff;  // effective part of trace(eps_p)
-            kappa_d_prev=kappa_d;
-            damage_prev=damage;
+            kappa_d_prev = kappa_d;
+            damage_prev = damage;
             lambda = 0;
         }
 
@@ -165,16 +162,16 @@ public:
         KelvinVector eps_p_D;  ///< deviatoric plastic strain
         double eps_p_V = 0;    ///< volumetric strain
         double eps_p_eff = 0;  ///< effective plastic strain
-        double kappa_d=0;      ///< damage driving variable
-        double damage=0;       ///< damage variable
-        
+        double kappa_d = 0;    ///< damage driving variable
+        double damage = 0;     ///< damage variable
+
         // Initial values from previous timestep
         KelvinVector eps_p_D_prev;  ///< \copydoc eps_p_D
         double eps_p_V_prev = 0;    ///< \copydoc eps_p_V
         double eps_p_eff_prev = 0;  ///< \copydoc eps_p_eff
-        double kappa_d_prev = 0;   ///< \copydoc kappa_d
-        double damage_prev = 0;   ///< \copydoc damage
-        double lambda = 0;  ///< plastic multiplier
+        double kappa_d_prev = 0;    ///< \copydoc kappa_d
+        double damage_prev = 0;     ///< \copydoc damage
+        double lambda = 0;          ///< plastic multiplier
 
 #ifndef NDEBUG
         friend std::ostream& operator<<(std::ostream& os,
@@ -214,6 +211,11 @@ public:
     {
     }
 
+    void updateDamage(
+        typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
+            material_state_variables,
+        double const t, ProcessLib::SpatialPosition const& x) override;
+
     bool computeConstitutiveRelation(
         double const t,
         ProcessLib::SpatialPosition const& x,
@@ -233,7 +235,6 @@ private:
 }  // namespace EhlersDamage
 }  // namespace Solids
 }  // namespace MaterialLib
-
 
 #include "EhlersDamage-impl.h"
 

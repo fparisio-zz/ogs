@@ -110,6 +110,11 @@ struct MechanicsBase
         KelvinMatrix& C,
         MaterialStateVariables& material_state_variables) = 0;
 
+    virtual void updateDamage(MaterialStateVariables& /*material_state_variables*/,
+                      double const /*t*/, ProcessLib::SpatialPosition const& /*x*/)
+    {
+    }
+
     virtual ~MechanicsBase() = default;
 };
 

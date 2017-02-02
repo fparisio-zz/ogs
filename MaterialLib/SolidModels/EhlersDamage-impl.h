@@ -40,6 +40,8 @@
 #include "NumLib/NewtonRaphson.h"
 #include "PhysicalStressWithInvariants.h"
 
+// just adding a comment
+
 namespace MaterialLib
 {
 namespace Solids
@@ -421,6 +423,88 @@ void calculatePlasticJacobian(
     // G_52, G_53, G_55 are zero
 }
 
+template <int DisplacementDim>
+void SolidEhlersDamage<DisplacementDim>::updateDamage(
+    typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
+        material_state_variables,
+    double const t, ProcessLib::SpatialPosition const& x)
+{
+    assert(dynamic_cast<MaterialStateVariables*>(&material_state_variables) !=
+           nullptr);
+    MaterialStateVariables& _state =
+        static_cast<MaterialStateVariables&>(material_state_variables);
+    _state.loadState();
+    using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;
+
+    double const alpha_d = _mp.alpha_d(t, x)[0];
+    double const beta_d = _mp.beta_d(t, x)[0];
+    double const h_d = _mp.h_d(t, x)[0];
+
+    KelvinVector const eps_p_D_dot = (_state.eps_p_D - _state.eps_p_D_prev);
+    double const eps_p_V_dot = (_state.eps_p_V - _state.eps_p_V_prev);
+    double const eps_p_eff_dot = (_state.eps_p_eff - _state.eps_p_eff_prev);
+
+    Eigen::Matrix<double, DisplacementDim, DisplacementDim> eps_p_dot =
+        Eigen::Matrix<double, DisplacementDim, DisplacementDim>::Zero();
+
+    for (int i = 0; i < DisplacementDim; ++i)
+        for (int j = 0; j < DisplacementDim; ++j)
+        {
+            if (i == j)
+            {
+                eps_p_dot(i, j) = eps_p_D_dot(i) + 1. / 3. * (eps_p_V_dot);
+            }
+            else
+            {
+                eps_p_dot(i, j) = eps_p_D_dot(i + j + 2);
+            };
+        };
+
+    Eigen::EigenSolver<decltype(eps_p_dot)> eigen_solver(eps_p_dot);
+    auto const& principal_strain = eigen_solver.eigenvalues();
+
+    // building kappa_d (damage driving variable)
+    double eps_p_V_n = 0.;
+
+    for (int i = 0; i < DisplacementDim; ++i)
+
+    {
+        Eigen::Matrix<double, DisplacementDim, 1> eig_val;
+        eig_val(i, 0) = real(principal_strain(i, 0));
+        if (eig_val(i, 0) <= 0.)
+        {
+            eps_p_V_n = eps_p_V_n + eig_val(i, 0);
+        }
+    }
+
+    // Different expressions for the damage driving variable will be tested here
+    // brittlness control variable omt
+    // Compute damage current step
+    double x_s = 0.;
+    if (eps_p_V_dot > 0.)
+    {
+        double const r_s = eps_p_eff_dot / (eps_p_V_dot);
+
+        if (r_s < 1.)
+        {
+            x_s = 1. + h_d * r_s * r_s;
+        }
+        else
+        {
+            x_s = 1. - 3. * h_d + 4. * h_d * std::sqrt(r_s);
+        }
+        _state.kappa_d = _state.kappa_d_prev + (eps_p_eff_dot) / x_s;
+    }
+    else
+    {
+        _state.kappa_d = _state.kappa_d_prev;
+    }
+
+    _state.damage = (1. - beta_d) * (1. - exp(-(_state.kappa_d) / alpha_d));
+
+    material_state_variables = _state;
+}
+
 /// Calculates the derivative of the residuals with respect to total
 /// strain. Implementation fully implicit only.
 template <int DisplacementDim>
@@ -507,10 +591,6 @@ bool SolidEhlersDamage<DisplacementDim>::computeConstitutiveRelation(
     // dimensionless stress/hydrostatic pressure
     double const G = _mp.G(t, x)[0];
     double const K = _mp.K(t, x)[0];
-
-    double const alpha_d = _mp.alpha_d(t, x)[0];
-    double const beta_d = _mp.beta_d(t, x)[0];
-    double const h_d = _mp.h_d(t, x)[0];
 
     // compute sigma_eff from damage total stress sigma
     // sigma_eff=(1-damage)*sigma_prev
@@ -615,72 +695,9 @@ bool SolidEhlersDamage<DisplacementDim>::computeConstitutiveRelation(
                 .template block<KelvinVectorSize, KelvinVectorSize>(0, 0);
     }
 
-    using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;
-
-    KelvinVector const eps_p_D_dot =
-        (_state.eps_p_D - _state.eps_p_D_prev) / dt;
-    double const eps_p_V_dot = (_state.eps_p_V - _state.eps_p_V_prev) / dt;
-    double const eps_p_eff_dot =
-        (_state.eps_p_eff - _state.eps_p_eff_prev) / dt;
-
-    Eigen::Matrix<double, DisplacementDim, DisplacementDim> eps_p_dot =
-        Eigen::Matrix<double, DisplacementDim, DisplacementDim>::Zero();
-
-    for (int i = 0; i < DisplacementDim; ++i)
-        for (int j = 0; j < DisplacementDim; ++j)
-        {
-            if (i == j)
-            {
-                eps_p_dot(i, j) = eps_p_D_dot(i) + 1. / 3. * (eps_p_V_dot);
-            }
-            else
-            {
-                eps_p_dot(i, j) = eps_p_D_dot(i + j + 2);
-            };
-        };
-
-    Eigen::EigenSolver<decltype(eps_p_dot)> eigen_solver(eps_p_dot);
-    auto const& principal_strain = eigen_solver.eigenvalues();
-
-    // building kappa_d (damage driving variable)
-    double eps_p_V_n = 0.;
-    for (int i = 0; i < DisplacementDim; ++i)
-    {
-        Eigen::Matrix<double, DisplacementDim, 1> eig_val;
-        eig_val(i, 0) = real(principal_strain(i, 0));
-        if (eig_val(i, 0) <= 0.)
-        {
-            eps_p_V_n = eps_p_V_n + eig_val(i, 0);
-        }
-    }
-
-    // Different expressions for the damage driving variable will be tested here
-    // brittlness control variable omt
-    // Compute damage current step
-    double x_s = 0.;
-    if (eps_p_V_dot > 0.)
-    {
-        double const r_s = eps_p_eff_dot / (eps_p_V_dot);
-
-        if (r_s < 1.)
-        {
-            x_s = 1. + h_d * r_s * r_s;
-        }
-        else
-        {
-            x_s = 1. - 3. * h_d + 4. * h_d * std::sqrt(r_s);
-        }
-        _state.kappa_d = _state.kappa_d_prev + (eps_p_eff_dot) / x_s;
-    }
-    else
-    {
-        _state.kappa_d = _state.kappa_d_prev;
-    }
-
-    _state.damage = (1. - beta_d) * (1. - exp(-(_state.kappa_d) / alpha_d));
-
     // compute sigma total from damage effective stress sigma_eff
     // Update sigma.
+    updateDamage(_state, t, x);
     sigma_final.noalias() = G * sigma * (1. - _state.damage);
 
     return true;
