@@ -16,7 +16,7 @@ double Invariants<KelvinVectorSize>::equivalentStress(
     Eigen::Matrix<double, KelvinVectorSize, 1> const& deviatoric_v)
 {
     assert(std::abs(trace(deviatoric_v)) <
-           std::numeric_limits<double>::epsilon());
+           std::numeric_limits<double>::epsilon()* 10);
     return std::sqrt(3 * J2(deviatoric_v));
 }
 

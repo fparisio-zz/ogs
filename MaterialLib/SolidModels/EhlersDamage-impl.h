@@ -433,7 +433,7 @@ void SolidEhlersDamage<DisplacementDim>::updateDamage(
            nullptr);
     MaterialStateVariables& _state =
         static_cast<MaterialStateVariables&>(material_state_variables);
-    _state.loadState();
+    //_state.loadState();
     using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;
 
     double const alpha_d = _mp.alpha_d(t, x)[0];
@@ -697,6 +697,10 @@ bool SolidEhlersDamage<DisplacementDim>::computeConstitutiveRelation(
 
     // compute sigma total from damage effective stress sigma_eff
     // Update sigma.
+    // if (_state.eps_p_V > 0.)
+    //{
+    //    int stopp = 1;
+    //}
     updateDamage(_state, t, x);
     sigma_final.noalias() = G * sigma * (1. - _state.damage);
 

@@ -1,7 +1,6 @@
 #ifndef PHYSICALSTRESSWITHINVARIANTS_H
 #define PHYSICALSTRESSWITHINVARIANTS_H
 
-
 namespace MaterialLib
 {
 namespace Solids
@@ -57,4 +56,4 @@ struct OnePlusGamma_pTheta final
 }
 }
 
-#endif // PHYSICALSTRESSWITHINVARIANTS_H
+#endif  // PHYSICALSTRESSWITHINVARIANTS_H
