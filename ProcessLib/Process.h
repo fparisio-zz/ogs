@@ -75,6 +75,8 @@ public:
         _coupling_term = coupling_term;
     }
 
+    void preAssemble(const double t, GlobalVector const& x) override final;
+
     virtual void setStaggeredCouplingTermToLocalAssemblers() {}
     void assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
                   GlobalMatrix& K, GlobalVector& b) final;
@@ -139,6 +141,11 @@ private:
         NumLib::LocalToGlobalIndexMap const& dof_table,
         MeshLib::Mesh const& mesh,
         unsigned const integration_order) = 0;
+
+    virtual void preAssembleConcreteProcess(const double /*t*/,
+                                            GlobalVector const& /*x*/)
+    {
+    }
 
     virtual void assembleConcreteProcess(const double t, GlobalVector const& x,
                                          GlobalMatrix& M, GlobalMatrix& K,
