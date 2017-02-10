@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -129,6 +130,12 @@ struct SmallDeformationNonlocalLocalAssemblerInterface
 
     virtual std::vector<double> const& getIntPtEpsilonYZ(
         std::vector<double>& cache) const = 0;
+
+    virtual void nonlocal(
+        std::size_t const mesh_item_id,
+        std::vector<std::unique_ptr<
+            SmallDeformationNonlocalLocalAssemblerInterface>> const&
+            local_assemblers) = 0;
 };
 
 template <typename ShapeFunction, typename IntegrationMethod,
@@ -206,6 +213,32 @@ public:
 
             _secondary_data.N[ip] = shape_matrices[ip].N;
         }
+    }
+
+    void nonlocal(std::size_t const mesh_item_id,
+                  std::vector<std::unique_ptr<
+                      SmallDeformationNonlocalLocalAssemblerInterface>> const&
+                      local_assemblers) override
+    {
+        std::cout << "\nXXX";
+        std::cout << "nonlocal in element " << _element.getID() << "\n";
+
+        // For all neighbors of element
+        for (std::size_t i = 0; i < _element.getNumberOfNeighbors(); ++i)
+        {
+            if (_element.getNeighbor(i) == nullptr)
+                continue;
+
+            auto const& neighbor_id = _element.getNeighbor(i)->getID();
+
+            std::cout << _element.getNeighbor(i)->getID() << "\t";
+            std::cout << local_assemblers[neighbor_id].get() << "\n";
+        }
+    }
+
+    char getIntegrationPointCoordinates(int const i) const
+    {
+        return ip
     }
 
     void assemble(double const /*t*/, std::vector<double> const& /*local_x*/,

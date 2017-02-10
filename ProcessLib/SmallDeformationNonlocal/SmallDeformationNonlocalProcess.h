@@ -139,6 +139,10 @@ private:
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
                 &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtEpsilonXY));
+
+        GlobalExecutor::executeMemberOnDereferenced(
+            &SmallDeformationNonlocalLocalAssemblerInterface::nonlocal,
+            _local_assemblers, _local_assemblers);
     }
 
     void assembleConcreteProcess(const double t, GlobalVector const& x,
