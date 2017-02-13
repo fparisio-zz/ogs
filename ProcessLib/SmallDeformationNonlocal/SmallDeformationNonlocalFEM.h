@@ -253,7 +253,7 @@ public:
         auto* nodes = _element.getNodes();
         using CoordinatesMatrix =
             typename ShapeMatricesType::GlobalDimNodalMatrixType;
-        Eigen::Map<CoordinatesMatrix> node_coordinates(3, N.size());
+        CoordinatesMatrix node_coordinates(3, N.size());
         for (int dim = 0; dim < 3; ++dim)
         {
             for (int i = 0; i < N.size(); ++i)
