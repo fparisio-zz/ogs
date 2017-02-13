@@ -235,7 +235,11 @@ public:
             auto const& neighbor_id = _element.getNeighbor(i)->getID();
 
             std::cout << _element.getNeighbor(i)->getID() << "\t";
-            std::cout << local_assemblers[neighbor_id].get() << "\n";
+
+            auto const& la = *local_assemblers[neighbor_id];
+            std::cout << &la << "\n";
+
+            la.getIntegrationPointCoordinates(0);
         }
     }
 
