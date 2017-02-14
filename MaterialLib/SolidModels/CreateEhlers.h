@@ -23,7 +23,7 @@ namespace Solids
 namespace Ehlers
 {
 
-std::unique_ptr<EhlersProperties> createDamageProperties(
+std::unique_ptr<EhlersDamageProperties> createDamageProperties(
     std::vector<std::unique_ptr<ProcessLib::ParameterBase>> const& parameters,
     BaseLib::ConfigTree const& config)
 {
@@ -44,8 +44,8 @@ std::unique_ptr<EhlersProperties> createDamageProperties(
 
     DBUG("Use \'%s\' as h_d.", h_d.name.c_str());
 
-    return std::unique_ptr<EhlersProperties>{
-        new EhlersProperties{alpha_d, beta_d, h_d}};
+    return std::unique_ptr<EhlersDamageProperties>{
+        new EhlersDamageProperties{alpha_d, beta_d, h_d}};
 }
 
 template <int DisplacementDim>
@@ -159,7 +159,7 @@ std::unique_ptr<MechanicsBase<DisplacementDim>> createEhlers(
         epsp,          paremeter_mp, kappa,  hardening_modulus};
 
     // Damage properties.
-    std::unique_ptr<EhlersProperties> ehlers_damage_properties;
+    std::unique_ptr<EhlersDamageProperties> ehlers_damage_properties;
 
     auto const& ehlers_damage_config =
         //! //\ogs_file_param{material__solid__constitutive_relation__Ehlers__damage_properties}
