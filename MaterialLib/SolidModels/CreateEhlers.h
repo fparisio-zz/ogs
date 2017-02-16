@@ -161,7 +161,7 @@ std::unique_ptr<MechanicsBase<DisplacementDim>> createEhlers(
     std::unique_ptr<EhlersDamageProperties> ehlers_damage_properties;
 
     auto const& ehlers_damage_config =
-        //! //\ogs_file_param{material__solid__constitutive_relation__Ehlers__damage_properties}
+        //! \ogs_file_param{material__solid__constitutive_relation__Ehlers__damage_properties}
         config.getConfigSubtreeOptional("damage_properties");
     if (ehlers_damage_config)
     {
