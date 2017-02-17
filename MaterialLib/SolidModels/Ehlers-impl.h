@@ -472,19 +472,19 @@ void SolidEhlers<DisplacementDim>::updateDamage(
 {
     assert(dynamic_cast<MaterialStateVariables*>(&material_state_variables) !=
            nullptr);
-    MaterialStateVariables& _state =
+    MaterialStateVariables& state =
         static_cast<MaterialStateVariables&>(material_state_variables);
 
     // Default case of the rate problem. Updated below if volumetric plastic
     // strain rate is positive (dilatancy).
-    _state.kappa_d = _state.kappa_d_prev;
+    state.kappa_d = state.kappa_d_prev;
 
     // Compute damage current step
-    double const eps_p_V_dot = _state.eps_p_V - _state.eps_p_V_prev;
+    double const eps_p_V_dot = state.eps_p_V - state.eps_p_V_prev;
     if (eps_p_V_dot > 0)
     {
         double const h_d = _damage_properties->h_d(t, x)[0];
-        double const eps_p_eff_dot = _state.eps_p_eff - _state.eps_p_eff_prev;
+        double const eps_p_eff_dot = state.eps_p_eff - state.eps_p_eff_prev;
         double const r_s = eps_p_eff_dot / eps_p_V_dot;
 
         // Brittleness decrease with confinement for the nonlinear flow rule.
@@ -498,14 +498,14 @@ void SolidEhlers<DisplacementDim>::updateDamage(
         {
             x_s = 1 - 3 * h_d + 4 * h_d * std::sqrt(r_s);
         }
-        _state.kappa_d += eps_p_eff_dot / x_s;
+        state.kappa_d += eps_p_eff_dot / x_s;
     }
 
     double const alpha_d = _damage_properties->alpha_d(t, x)[0];
     double const beta_d = _damage_properties->beta_d(t, x)[0];
 
     // Update internal damage variable.
-    _state.damage = (1 - beta_d) * (1 - std::exp(-_state.kappa_d / alpha_d));
+    state.damage = (1 - beta_d) * (1 - std::exp(-state.kappa_d / alpha_d));
 }
 
 /// Calculates the derivative of the residuals with respect to total
