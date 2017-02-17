@@ -9,4 +9,4 @@ saturated quasi-brittle shales. Int J Rock Mech Min Sci, 93:295-306
 
 \attention This implementation does not contain strain regularization. The model
 should be used with care as pathological mesh-dependency may arise. To overcome
-this issue, the user can employ the non-locol integral formulation.
+this issue, the user can employ the non-local integral formulation.

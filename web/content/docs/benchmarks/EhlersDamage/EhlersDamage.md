@@ -1,6 +1,6 @@
 +++
 author = "Francesco Parisio"
-title = "Ehlers plasti-damage coupled model"
+title = "Ehlers plastic-damage coupled model"
 +++
 
 ## Introduction
