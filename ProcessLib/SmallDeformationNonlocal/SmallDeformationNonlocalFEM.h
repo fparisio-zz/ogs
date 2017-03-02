@@ -510,6 +510,7 @@ public:
         return getIntPtEpsilon(cache, 5);
     }
 
+private:
     std::vector<double> const& getIntPtSigma(std::vector<double>& cache,
                                              std::size_t const component) const
     {
@@ -539,7 +540,6 @@ public:
         return cache;
     }
 
-private:
 
     SmallDeformationNonlocalProcessData<DisplacementDim>& _process_data;
 

@@ -60,14 +60,6 @@ struct SmallDeformationNonlocalLocalAssemblerInterface
     virtual std::vector<double> const& getIntPtEpsilonYZ(
         std::vector<double>& cache) const = 0;
 
-    virtual std::vector<double> const& getIntPtSigma(
-            std::vector<double>& cache,
-            std::size_t const component) const = 0;
-
-    virtual std::vector<double> const& getIntPtEpsilon(
-            std::vector<double>& cache,
-            std::size_t const component) const = 0;
-
     virtual void nonlocal(
         std::size_t const mesh_item_id,
         std::vector<std::unique_ptr<
