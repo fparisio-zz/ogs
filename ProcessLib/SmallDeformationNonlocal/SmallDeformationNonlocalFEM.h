@@ -379,7 +379,7 @@ public:
                 OGS_FATAL("Computation of non-local damage update failed.");
             */
 
-            {   // Integrate one-function.
+            {  // Integrate one-function.
                 double test_alpha = 0;
 
                 for (auto const& tuple : _ip_data[ip].non_local_assemblers)
