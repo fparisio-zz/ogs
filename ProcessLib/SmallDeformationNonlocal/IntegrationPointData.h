@@ -65,9 +65,9 @@ struct IntegrationPointData final
         _material_state_variables->pushBackState();
     }
 
-    double getDamage() const
+    double getLocalVariable() const
     {
-        return _material_state_variables->getDamage();
+        return _material_state_variables->getLocalVariable();
     }
 
     std::vector<std::tuple<

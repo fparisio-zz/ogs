@@ -158,9 +158,9 @@ public:
             lambda = 0;
         }
 
-        double getDamage() const override
+        double getLocalVariable() const override
         {
-            return damage;
+            return kappa_d;
         }
 
         using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;

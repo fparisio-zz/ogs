@@ -464,8 +464,57 @@ void calculatePlasticJacobian(
     // G_52, G_53, G_55 are zero
 }
 
+void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
+    double const t, ProcessLib::SpatialPosition const& x,
+    typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
+        material_state_variables)
+{
+    assert(dynamic_cast<MaterialStateVariables*>(&material_state_variables) !=
+           nullptr);
+    MaterialStateVariables& _state =
+        static_cast<MaterialStateVariables&>(material_state_variables);
+
+    // Default case of the rate problem. Updated below if volumetric plastic
+    // strain rate is positive (dilatancy).
+    _state.kappa_d = _state.kappa_d_prev;
+
+    // Compute damage current step
+    double const eps_p_V_dot = _state.eps_p_V - _state.eps_p_V_prev;
+    if (eps_p_V_dot > 0)
+    {
+        double const h_d = _damage_properties->h_d(t, x)[0];
+        double const eps_p_eff_dot = _state.eps_p_eff - _state.eps_p_eff_prev;
+        double const r_s = eps_p_eff_dot / eps_p_V_dot;
+
+        // Brittleness decrease with confinement for the nonlinear flow rule.
+        // ATTENTION: For linear flow rule -> constant brittleness.
+        double x_s = 0;
+        if (r_s < 1)
+        {
+            x_s = 1 + h_d * r_s * r_s;
+        }
+        else
+        {
+            x_s = 1 - 3 * h_d + 4 * h_d * std::sqrt(r_s);
+        }
+        _state.kappa_d += eps_p_eff_dot / x_s;
+    }
+}
+
 template <int DisplacementDim>
 void SolidEhlers<DisplacementDim>::updateDamage(
+    double const t, ProcessLib::SpatialPosition const& x,
+    typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
+        material_state_variables, kappa_d)
+{
+    double const alpha_d = _damage_properties->alpha_d(t, x)[0];
+    double const beta_d = _damage_properties->beta_d(t, x)[0];
+
+    // Update internal damage variable.
+    _state.damage = (1 - beta_d) * (1 - std::exp(-kappa_d / alpha_d));
+}
+
+void SolidEhlers<DisplacementDim>::calculateLocalDamage(
     double const t, ProcessLib::SpatialPosition const& x,
     typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
         material_state_variables)
@@ -501,11 +550,8 @@ void SolidEhlers<DisplacementDim>::updateDamage(
         _state.kappa_d += eps_p_eff_dot / x_s;
     }
 
-    double const alpha_d = _damage_properties->alpha_d(t, x)[0];
-    double const beta_d = _damage_properties->beta_d(t, x)[0];
-
-    // Update internal damage variable.
-    _state.damage = (1 - beta_d) * (1 - std::exp(-_state.kappa_d / alpha_d));
+    // for the local damage only!
+    updateDamage(t, x, material_state_variables, _state.kappa_d);
 }
 
 /// Calculates the derivative of the residuals with respect to total
@@ -598,7 +644,7 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
     KelvinVector sigma_eff_prev = sigma_prev;  // In case without damage the
                                                // effective value is same as the
                                                // previous one.
-    if (_damage_properties)
+    if (_damage_properties)  // Valid for local and non-local damage
     {
         // Compute sigma_eff from damage total stress sigma, which is given by
         // sigma_eff=sigma_prev / (1-damage)
@@ -698,7 +744,13 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
             .noalias() = calculateDResidualDEps<DisplacementDim>(K, G);
 
         if (_damage_properties)
-            updateDamage(t, x, _state);
+        {
+            calculateLocalKappaD(t, x, _state);
+
+            if (compute_local_damage)  // The non-local damage update is called
+                                       // from the FEM.
+                updateDamage(t, x, _state, _state.kappa_d);
+        }
 
         // Extract consistent tangent.
         C.noalias() =
@@ -708,10 +760,10 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
     }
 
     // Update sigma.
-    if (_damage_properties)
+    if (_damage_properties && compute_local_damage)
         sigma_final = G * sigma * (1 - _state.damage);
     else
-        sigma_final.noalias() = G * sigma;
+        sigma_final.noalias() = G * sigma;  // Plastic part only.
 
     return true;
 }
