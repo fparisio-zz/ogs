@@ -414,7 +414,6 @@ public:
                                         integralMeasure;
                 }
                 //std::cerr << "XX " << nonlocal_kappa_d << "\n";
-                assert(std::abs(nonlocal_kappa_d - 1) < 2.7e-15);
 
                 _ip_data[ip]._damage =
                     _ip_data[ip].updateDamage(t, x_position, nonlocal_kappa_d);
