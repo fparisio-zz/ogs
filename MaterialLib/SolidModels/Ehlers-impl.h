@@ -464,6 +464,7 @@ void calculatePlasticJacobian(
     // G_52, G_53, G_55 are zero
 }
 
+template <int DisplacementDim>
 void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
     double const t, ProcessLib::SpatialPosition const& x,
     typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
@@ -502,18 +503,26 @@ void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
 }
 
 template <int DisplacementDim>
-void SolidEhlers<DisplacementDim>::updateDamage(
-    double const t, ProcessLib::SpatialPosition const& x,
+double SolidEhlers<DisplacementDim>::updateDamage(
+    double const t, ProcessLib::SpatialPosition const& x, double const kappa_d,
     typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
-        material_state_variables, kappa_d)
+        material_state_variables)
 {
+    assert(dynamic_cast<MaterialStateVariables*>(&material_state_variables) !=
+           nullptr);
+    MaterialStateVariables& _state =
+        static_cast<MaterialStateVariables&>(material_state_variables);
+
     double const alpha_d = _damage_properties->alpha_d(t, x)[0];
     double const beta_d = _damage_properties->beta_d(t, x)[0];
 
     // Update internal damage variable.
     _state.damage = (1 - beta_d) * (1 - std::exp(-kappa_d / alpha_d));
+
+    return _state.damage;
 }
 
+template <int DisplacementDim>
 void SolidEhlers<DisplacementDim>::calculateLocalDamage(
     double const t, ProcessLib::SpatialPosition const& x,
     typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
@@ -551,7 +560,7 @@ void SolidEhlers<DisplacementDim>::calculateLocalDamage(
     }
 
     // for the local damage only!
-    updateDamage(t, x, material_state_variables, _state.kappa_d);
+    updateDamage(t, x, _state.kappa_d, material_state_variables);
 }
 
 /// Calculates the derivative of the residuals with respect to total
@@ -747,9 +756,9 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
         {
             calculateLocalKappaD(t, x, _state);
 
-            if (compute_local_damage)  // The non-local damage update is called
+            if (_compute_local_damage)  // The non-local damage update is called
                                        // from the FEM.
-                updateDamage(t, x, _state, _state.kappa_d);
+                updateDamage(t, x, _state.kappa_d, material_state_variables);
         }
 
         // Extract consistent tangent.
@@ -760,7 +769,7 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
     }
 
     // Update sigma.
-    if (_damage_properties && compute_local_damage)
+    if (_damage_properties && _compute_local_damage)
         sigma_final = G * sigma * (1 - _state.damage);
     else
         sigma_final.noalias() = G * sigma;  // Plastic part only.

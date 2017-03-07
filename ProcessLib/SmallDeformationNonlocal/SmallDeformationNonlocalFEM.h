@@ -16,6 +16,7 @@
 
 #include "MaterialLib/SolidModels/LinearElasticIsotropic.h"
 #include "MaterialLib/SolidModels/Lubby2.h"
+#include "MaterialLib/SolidModels/Ehlers.h"
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "NumLib/Fem/FiniteElement/TemplateIsoparametric.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
@@ -329,7 +330,7 @@ public:
         }
     }
 
-    void assembleWithJacobian(double const /*t*/,
+    void assembleWithJacobian(double const t,
                               std::vector<double> const& local_x,
                               std::vector<double> const& /*local_xdot*/,
                               const double /*dxdot_dx*/, const double /*dx_dx*/,
@@ -415,8 +416,10 @@ public:
                 std::cerr << "XX " << nonlocal_kappa_d << "\n\n";
                 assert(std::abs(nonlocal_kappa_d - 1) < 2.7e-15);
 
-                updateDamage(nonlocal_kappa_d);
-                sigma = sigma * (1 - material.damage);
+                double const damage =
+                    _ip_data[ip].updateDamage(t, x_position, nonlocal_kappa_d);
+
+                sigma = sigma * (1 - damage);
             }
 
             local_b.noalias() -=
