@@ -11,9 +11,10 @@
 
 #include <cassert>
 
+#include "MaterialLib/SolidModels/CreateEhlers.h"
+#include "MaterialLib/SolidModels/CreateGeosed.h"
 #include "MaterialLib/SolidModels/CreateLinearElasticIsotropic.h"
 #include "MaterialLib/SolidModels/CreateLubby2.h"
-#include "MaterialLib/SolidModels/CreateEhlers.h"
 #include "ProcessLib/Utils/ParseSecondaryVariables.h"
 
 #include "SmallDeformationProcess.h"
@@ -30,8 +31,7 @@ extern template class SmallDeformationProcess<2>;
 extern template class SmallDeformationProcess<3>;
 
 template <int DisplacementDim>
-std::unique_ptr<Process>
-createSmallDeformationProcess(
+std::unique_ptr<Process> createSmallDeformationProcess(
     MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<ProcessVariable> const& variables,
@@ -82,6 +82,11 @@ createSmallDeformationProcess(
     if (type == "Ehlers")
     {
         material = MaterialLib::Solids::Ehlers::createEhlers<DisplacementDim>(
+            parameters, constitutive_relation_config);
+    }
+    else if (type == "Geosed")
+    {
+        material = MaterialLib::Solids::Geosed::createGeosed<DisplacementDim>(
             parameters, constitutive_relation_config);
     }
     else if (type == "LinearElasticIsotropic")

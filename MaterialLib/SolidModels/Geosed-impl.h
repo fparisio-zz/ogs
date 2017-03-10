@@ -257,6 +257,105 @@ ProcessLib::KelvinMatrixType<DisplacementDim> s_odot_s(
 }
 
 template <int DisplacementDim>
+ProcessLib::KelvinVectorType<DisplacementDim> derivatives_F(
+    double const t,
+    ProcessLib::SpatialPosition const& x,
+    PhysicalStressWithInvariants<DisplacementDim> const& s,
+    typename SolidGeosed<DisplacementDim>::MaterialProperties const& _mp)
+{
+    static int const KelvinVectorSize =
+        ProcessLib::KelvinVectorDimensions<DisplacementDim>::value;
+    using Invariants = MaterialLib::SolidModels::Invariants<KelvinVectorSize>;
+    using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;
+
+    double const G = _mp.G(t, x)[0];
+    double const m = _mp.m(t, x)[0];
+    double const alpha = _mp.alpha(t, x)[0];
+    double const beta = _mp.beta(t, x)[0];
+    double const gamma = _mp.gamma(t, x)[0];
+    double const epsilon = _mp.epsilon(t, x)[0];
+    double const delta = _mp.delta(t, x)[0];
+
+    auto const& P_dev = Invariants::deviatoric_projection;
+    auto const& identity2 = Invariants::identity2;
+
+    double const theta = s.J_3 / boost::math::pow<3>(std::sqrt(s.J_2));
+    OnePlusGamma_pTheta const one_gt{gamma, theta, m};
+    double const one_gt_pow_m = std::pow(one_gt.value, m);
+    double const gm = gamma * m;
+
+    KelvinVector const sigma_D_inverse = MaterialLib::SolidModels::inverse(s.D);
+    KelvinVector const sigma_D_inverse_D = P_dev * sigma_D_inverse;
+    KelvinVector const dtheta_dsigma =
+        theta * sigma_D_inverse_D - 3. / 2. * theta / s.J_2 * s.D;
+    KelvinVector const M0 = s.J_2 / one_gt.value * dtheta_dsigma;
+    double const sqrtPhi = std::sqrt(
+        s.J_2 * one_gt.pow_m_p + alpha / 2. * boost::math::pow<2>(s.I_1) +
+        boost::math::pow<2>(delta) * boost::math::pow<4>(s.I_1));
+
+    // derivative of yield function w.r.t. sigma
+    KelvinVector const dF_dsigma =
+        G * (one_gt_pow_m * (s.D + gm * M0) +
+             (alpha * s.I_1 +
+              4 * boost::math::pow<2>(delta) * boost::math::pow<3>(s.I_1)) *
+                 identity2) /
+            (2. * sqrtPhi) +
+        G * (beta + 2 * epsilon * s.I_1) * identity2;
+    return dF_dsigma;
+}
+
+template <int DisplacementDim>
+ProcessLib::KelvinVectorType<DisplacementDim> derivatives_G(
+    double const t,
+    ProcessLib::SpatialPosition const& x,
+    PhysicalStressWithInvariants<DisplacementDim> const& s,
+    typename SolidGeosed<DisplacementDim>::MaterialProperties const& _mp)
+{
+    static int const KelvinVectorSize =
+        ProcessLib::KelvinVectorDimensions<DisplacementDim>::value;
+    using Invariants = MaterialLib::SolidModels::Invariants<KelvinVectorSize>;
+    using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;
+
+    double const G = _mp.G(t, x)[0];
+
+    double const alpha_p = _mp.alpha_p(t, x)[0];
+    double const beta_p = _mp.beta_p(t, x)[0];
+    double const gamma_p = _mp.gamma_p(t, x)[0];
+    double const delta_p = _mp.delta_p(t, x)[0];
+    double const epsilon_p = _mp.epsilon_p(t, x)[0];
+    double const m_p = _mp.m_p(t, x)[0];
+    double const gm_p = gamma_p * m_p;
+
+    auto const& P_dev = Invariants::deviatoric_projection;
+    auto const& identity2 = Invariants::identity2;
+
+    double const theta = s.J_3 / boost::math::pow<3>(std::sqrt(s.J_2));
+    OnePlusGamma_pTheta const one_gt{gamma_p, theta, m_p};
+
+    KelvinVector const sigma_D_inverse = MaterialLib::SolidModels::inverse(s.D);
+    KelvinVector const sigma_D_inverse_D = P_dev * sigma_D_inverse;
+    KelvinVector const dtheta_dsigma =
+        theta * sigma_D_inverse_D - 3. / 2. * theta / s.J_2 * s.D;
+    KelvinVector const M0 = s.J_2 / one_gt.value * dtheta_dsigma;
+
+    double const sqrtPhi = std::sqrt(
+        s.J_2 * one_gt.pow_m_p + alpha_p / 2. * boost::math::pow<2>(s.I_1) +
+        boost::math::pow<2>(delta_p) * boost::math::pow<4>(s.I_1));
+
+    // derivative of flow G w.r.t. sigma
+    KelvinVector const dPhi_dsigma =
+        one_gt.pow_m_p * (s.D + gm_p * M0) +
+        (alpha_p * s.I_1 +
+         4 * boost::math::pow<2>(delta_p) * boost::math::pow<3>(s.I_1)) *
+            identity2;
+    KelvinVector const dG_dsigma = 1 / 2 / sqrtPhi * dPhi_dsigma +
+                                   beta_p * identity2 +
+                                   2 * epsilon_p * s.I_1 * identity2;
+
+    return dG_dsigma;
+}
+
+template <int DisplacementDim>
 void calculatePlasticJacobian(
     double const dt,
     double const t,
@@ -277,11 +376,6 @@ void calculatePlasticJacobian(
 
     double const G = _mp.G(t, x)[0];
     double const K = _mp.K(t, x)[0];
-    double const m = _mp.m(t, x)[0];
-    double const alpha = _mp.alpha(t, x)[0];
-    double const beta = _mp.beta(t, x)[0];
-    double const gamma = _mp.gamma(t, x)[0];
-    double const delta = _mp.delta(t, x)[0];
 
     double const alpha_p = _mp.alpha_p(t, x)[0];
     double const beta_p = _mp.beta_p(t, x)[0];
@@ -440,22 +534,8 @@ void calculatePlasticJacobian(
     jacobian(2 * KelvinVectorSize + 1, 2 * KelvinVectorSize + 1) = 1. / dt;
 
     // G_51
-    {
-        double const one_gt_pow_m = std::pow(one_gt.value, m);
-        double const gm = gamma * m;
-        // derivative of yield function w.r.t. sigma
-        KelvinVector const dF_dsigma =
-            G * (one_gt_pow_m * (s.D + gm * M0) +
-                 (alpha * s.I_1 +
-                  4 * boost::math::pow<2>(delta) * boost::math::pow<3>(s.I_1)) *
-                     identity2) /
-                (2. * sqrtPhi) +
-            G * (beta + 2 * epsilon_p * s.I_1) * identity2;
-
-        jacobian
-            .template block<1, KelvinVectorSize>(2 * KelvinVectorSize + 2, 0)
-            .noalias() = dF_dsigma.transpose() / G;
-    }
+    jacobian.template block<1, KelvinVectorSize>(2 * KelvinVectorSize + 2, 0)
+        .noalias() = derivatives_F(t, x, s, _mp).transpose() / G;
 
     // G_54
     jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
@@ -604,8 +684,8 @@ bool SolidGeosed<DisplacementDim>::computeConstitutiveRelation(
         // sigma_eff=sigma_prev / (1-damage)
         sigma_eff_prev = sigma_prev / (1 - _state.damage_prev);
     }
-    KelvinVector sigma =
-        predict_sigma<DisplacementDim>(G, K, sigma_eff_prev, eps, eps_prev, eps_V);
+    KelvinVector sigma = predict_sigma<DisplacementDim>(G, K, sigma_eff_prev,
+                                                        eps, eps_prev, eps_V);
 
     // update parameter
     _mp.calculateIsotropicHardening(t, x, _state.eps_p_eff);
@@ -706,6 +786,27 @@ bool SolidGeosed<DisplacementDim>::computeConstitutiveRelation(
             linear_solver.solve(-dresidual_deps)
                 .template block<KelvinVectorSize, KelvinVectorSize>(0, 0);
     }
+
+    // Compute damage update of consistent tangent matrix
+    Eigen::Matrix<double, KelvinVectorSize, KelvinVectorSize, Eigen::RowMajor>
+        dam_matrix = Eigen::Matrix<double, KelvinVectorSize, KelvinVectorSize,
+                                   Eigen::RowMajor>::Zero();
+
+    KelvinVector dFds = derivatives_F(t, x, s, _mp);
+    KelvinVector dGds = derivatives_G(t, x, s, _mp);
+    //    C=C+C;
+    KelvinMatrix De;
+    De.setZero();
+    De.template topLeftCorner<3, 3>().setConstant(K - 2. / 3 * G);
+    De.noalias() += 2 * G * KelvinMatrix::Identity();
+
+    KelvinMatrix my_mat1 = sigma * (dFds.transpose() * De).transpose();
+    double my_sca1 = dFds.transpose() * (De * dGds);
+    double hard_mod = _mp.kappa(t, x)[0] * _mp.hardening_coefficient(t, x)[0] *
+                      1. / 3. * (_state.eps_p_D).transpose() * (P_dev * dGds);
+    // int testing= (P_dev.transpose() * dGds).eval();
+    // int testing = ((_state.eps_p_D).transpose() * (P_dev * dGds)).eval();
+    //    KelvinMatrix my_mat3 = sigma.transpose() * my_vec;
 
     // Update sigma.
     if (_damage_properties)
