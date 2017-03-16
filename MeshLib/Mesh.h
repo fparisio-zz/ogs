@@ -234,4 +234,31 @@ void addPropertyToMesh(MeshLib::Mesh& mesh, std::string const& name,
     std::copy(values.cbegin(), values.cend(), std::back_inserter(*property));
 }
 
+template <typename T>
+PropertyVector<T>* getOrCreateMeshProperty(Mesh& mesh,
+                                           std::string const& property_name,
+                                           int const n_components)
+{
+    if (property_name.empty())
+        OGS_FATAL(
+            "Trying to get or to create a mesh property with empty name.");
+
+    if (mesh.getProperties().hasPropertyVector(property_name))
+    {
+        auto result =
+            mesh.getProperties().template getPropertyVector<T>(property_name);
+        assert(result);
+        assert(result->size() == mesh.getNumberOfNodes() * n_components);
+        return result;
+    }
+    else
+    {
+        auto result = mesh.getProperties().template createNewPropertyVector<T>(
+            property_name, MeshLib::MeshItemType::Node, n_components);
+        assert(result);
+        result->resize(mesh.getNumberOfNodes() * n_components);
+        return result;
+    }
+}
+
 } /* namespace */
