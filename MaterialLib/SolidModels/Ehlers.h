@@ -212,12 +212,20 @@ public:
     using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;
     using KelvinMatrix = ProcessLib::KelvinMatrixType<DisplacementDim>;
 
+    struct NonlinearSolverParameters
+    {
+        int const maximum_iterations;
+        double const error_tolerance;
+    };
+
 public:
     explicit SolidEhlers(
+        NonlinearSolverParameters const& nonlinear_solver_parameters,
         MaterialProperties const& material_properties,
         std::unique_ptr<EhlersDamageProperties>&& damage_properties,
         bool const compute_local_damage = true)
-        : _mp(material_properties),
+        : _nonlinear_solver_parameters(nonlinear_solver_parameters),
+          _mp(material_properties),
           _damage_properties(std::move(damage_properties)),
           _compute_local_damage(compute_local_damage)
 
@@ -250,6 +258,8 @@ private:
             material_state_variables);
 
 private:
+    NonlinearSolverParameters const _nonlinear_solver_parameters;
+
     MaterialProperties _mp;
     std::unique_ptr<EhlersDamageProperties> _damage_properties;
     bool const _compute_local_damage;
