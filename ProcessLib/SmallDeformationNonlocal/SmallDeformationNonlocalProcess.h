@@ -11,23 +11,24 @@
 
 #include <cassert>
 
+#include "NumLib/DOF/DOFTableUtil.h"
 #include "ProcessLib/Process.h"
-#include "ProcessLib/SmallDeformation/CreateLocalAssemblers.h"
+#include "ProcessLib/SmallDeformationNonlocal/CreateLocalAssemblers.h"
 
-#include "SmallDeformationFEM.h"
-#include "SmallDeformationProcessData.h"
+#include "SmallDeformationNonlocalFEM.h"
+#include "SmallDeformationNonlocalProcessData.h"
 
 namespace ProcessLib
 {
-namespace SmallDeformation
+namespace SmallDeformationNonlocal
 {
 template <int DisplacementDim>
-class SmallDeformationProcess final : public Process
+class SmallDeformationNonlocalProcess final : public Process
 {
     using Base = Process;
 
 public:
-    SmallDeformationProcess(
+    SmallDeformationNonlocalProcess(
         MeshLib::Mesh& mesh,
         std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&&
             jacobian_assembler,
@@ -35,7 +36,7 @@ public:
         unsigned const integration_order,
         std::vector<std::reference_wrapper<ProcessVariable>>&&
             process_variables,
-        SmallDeformationProcessData<DisplacementDim>&& process_data,
+        SmallDeformationNonlocalProcessData<DisplacementDim>&& process_data,
         SecondaryVariableCollection&& secondary_variables,
         NumLib::NamedFunctionCaller&& named_function_caller)
         : Process(mesh, std::move(jacobian_assembler), parameters,
@@ -44,6 +45,8 @@ public:
                   std::move(named_function_caller)),
           _process_data(std::move(process_data))
     {
+        _nodal_forces = MeshLib::getOrCreateMeshProperty<double>(
+            mesh, "F", DisplacementDim);
     }
 
     //! \name ODESystem interface
@@ -53,14 +56,14 @@ public:
     //! @}
 
 private:
-    using LocalAssemblerInterface = SmallDeformationLocalAssemblerInterface;
+    using LocalAssemblerInterface = SmallDeformationNonlocalLocalAssemblerInterface;
 
     void initializeConcreteProcess(
         NumLib::LocalToGlobalIndexMap const& dof_table,
         MeshLib::Mesh const& mesh,
         unsigned const integration_order) override
     {
-        ProcessLib::SmallDeformation::createLocalAssemblers<DisplacementDim,
+        ProcessLib::SmallDeformationNonlocal::createLocalAssemblers<DisplacementDim,
                                                             LocalAssemblerData>(
             mesh.getDimension(), mesh.getElements(), dof_table,
             _local_assemblers, mesh.isAxiallySymmetric(), integration_order,
@@ -77,115 +80,86 @@ private:
                 std::move(all_mesh_subsets_single_component),
                 // by location order is needed for output
                 NumLib::ComponentOrder::BY_LOCATION));
+        _nodal_forces->resize(DisplacementDim * mesh.getNumberOfNodes());
 
         Base::_secondary_variables.addSecondaryVariable(
-            "eps_p_V", 1,
+            "damage", 1,
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
-                &SmallDeformationLocalAssemblerInterface::getIntPtEpsPV));
-        Base::_secondary_variables.addSecondaryVariable(
-            "eps_p_D_xx", 1,
-            makeExtrapolator(
-                getExtrapolator(), _local_assemblers,
-                &SmallDeformationLocalAssemblerInterface::getIntPtEpsPDXX));
+                &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtDamage));
 
         Base::_secondary_variables.addSecondaryVariable(
             "sigma_xx", 1,
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
-                &SmallDeformationLocalAssemblerInterface::getIntPtSigmaXX));
+                &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtSigmaXX));
 
         Base::_secondary_variables.addSecondaryVariable(
             "sigma_yy", 1,
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
-                &SmallDeformationLocalAssemblerInterface::getIntPtSigmaYY));
+                &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtSigmaYY));
 
         Base::_secondary_variables.addSecondaryVariable(
             "sigma_zz", 1,
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
-                &SmallDeformationLocalAssemblerInterface::getIntPtSigmaZZ));
+                &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtSigmaZZ));
 
         Base::_secondary_variables.addSecondaryVariable(
             "sigma_xy", 1,
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
-                &SmallDeformationLocalAssemblerInterface::getIntPtSigmaXY));
+                &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtSigmaXY));
 
         if (DisplacementDim == 3) {
             Base::_secondary_variables.addSecondaryVariable(
                 "sigma_xz", 1,
                 makeExtrapolator(
                     getExtrapolator(), _local_assemblers,
-                    &SmallDeformationLocalAssemblerInterface::getIntPtSigmaXZ));
+                    &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtSigmaXZ));
 
             Base::_secondary_variables.addSecondaryVariable(
                 "sigma_yz", 1,
                 makeExtrapolator(
                     getExtrapolator(), _local_assemblers,
-                    &SmallDeformationLocalAssemblerInterface::getIntPtSigmaYZ));
+                    &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtSigmaYZ));
         }
 
         Base::_secondary_variables.addSecondaryVariable(
             "epsilon_xx", 1,
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
-                &SmallDeformationLocalAssemblerInterface::getIntPtEpsilonXX));
+                &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtEpsilonXX));
 
         Base::_secondary_variables.addSecondaryVariable(
             "epsilon_yy", 1,
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
-                &SmallDeformationLocalAssemblerInterface::getIntPtEpsilonYY));
+                &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtEpsilonYY));
 
         Base::_secondary_variables.addSecondaryVariable(
             "epsilon_zz", 1,
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
-                &SmallDeformationLocalAssemblerInterface::getIntPtEpsilonZZ));
+                &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtEpsilonZZ));
 
         Base::_secondary_variables.addSecondaryVariable(
             "epsilon_xy", 1,
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
-                &SmallDeformationLocalAssemblerInterface::getIntPtEpsilonXY));
+                &SmallDeformationNonlocalLocalAssemblerInterface::getIntPtEpsilonXY));
 
-#ifdef PROTOBUF_FOUND
-        Base::integration_point_writer = [this](
-            MeshLib::PropertyVector<char>& output,
-            MeshLib::PropertyVector<std::size_t>& offsets) {
-            return writeIntegrationPointData(output, offsets);
-        };
-#endif  // PROTOBUF_FOUND
+        GlobalExecutor::executeMemberOnDereferenced(
+            &SmallDeformationNonlocalLocalAssemblerInterface::nonlocal,
+            _local_assemblers, _local_assemblers);
     }
 
-    std::size_t writeIntegrationPointData(MeshLib::PropertyVector<char>& output,
-            MeshLib::PropertyVector<std::size_t>& offsets)
+    void assembleConcreteProcess(
+        const double t, GlobalVector const& x, GlobalMatrix& M, GlobalMatrix& K,
+        GlobalVector& b, StaggeredCouplingTerm const& coupling_term) override
     {
-        output.clear();
-        offsets.clear();
-        std::vector<char> local_data;
-        std::size_t offset = 0;
-        for (auto& la : _local_assemblers)
-        {
-            offsets.push_back(offset);
-            std::size_t const local_offset =
-                la->writeIntegrationPointData(local_data);
-            std::copy_n(std::begin(local_data), local_offset,
-                        std::back_inserter(output));
-            offset += local_offset;
-        }
-        return offset;
-    }
-
-    void assembleConcreteProcess(const double t, GlobalVector const& x,
-                                 GlobalMatrix& M, GlobalMatrix& K,
-                                 GlobalVector& b,
-                                 StaggeredCouplingTerm const&
-                                 coupling_term) override
-    {
-        DBUG("Assemble SmallDeformationProcess.");
+        DBUG("Assemble SmallDeformationNonlocalProcess.");
 
         // Call global assembler for each local assembly item.
         GlobalExecutor::executeMemberDereferenced(
@@ -194,93 +168,80 @@ private:
             coupling_term);
     }
 
+    void preAssembleConcreteProcess(const double t,
+                                    GlobalVector const& x) override
+    {
+        DBUG("preAssemble SmallDeformationNonlocalProcess.");
+
+        // Call global assembler for each local assembly item.
+        GlobalExecutor::executeMemberDereferenced(
+            _global_assembler,
+            &VectorMatrixAssembler::preAssemble,
+            _local_assemblers, *_local_to_global_index_map, t, x);
+    }
+
     void assembleWithJacobianConcreteProcess(
         const double t, GlobalVector const& x, GlobalVector const& xdot,
         const double dxdot_dx, const double dx_dx, GlobalMatrix& M,
         GlobalMatrix& K, GlobalVector& b, GlobalMatrix& Jac,
         StaggeredCouplingTerm const& coupling_term) override
     {
-        DBUG("AssembleWithJacobian SmallDeformationProcess.");
+        DBUG("AssembleWithJacobian SmallDeformationNonlocalProcess.");
 
         // Call global assembler for each local assembly item.
         GlobalExecutor::executeMemberDereferenced(
-            _global_assembler, &VectorMatrixAssembler::assembleWithJacobian,
+            _global_assembler,
+            &VectorMatrixAssembler::assembleWithJacobian,
             _local_assemblers, *_local_to_global_index_map, t, x, xdot,
             dxdot_dx, dx_dx, M, K, b, Jac, coupling_term);
-    }
-
-    void setInitialConditionsConcreteProcess(double const t,
-                                             GlobalVector const& x) override
-    {
-        DBUG("SetInitialConditions SmallDeformationProcess.");
-
-        if (!_mesh.getProperties().hasPropertyVector("integration_point_data"))
-            return;
-        if (!_mesh.getProperties().hasPropertyVector("integration_point_offsets"))
-            OGS_FATAL(
-                "integration_point_data field exists in the input but there is "
-                "no integration_point_offsets cell data.");
-
-        auto const& data =
-            *_mesh.getProperties().template getPropertyVector<char>(
-                "integration_point_data");
-        assert(data.getMeshItemType() ==
-               MeshLib::MeshItemType::IntegrationPoint);
-
-        auto const& offsets =
-            *_mesh.getProperties().template getPropertyVector<std::size_t>(
-                "integration_point_offsets");
-        assert(offsets.getMeshItemType() == MeshLib::MeshItemType::Cell);
-
-        std::vector<char> local_data;
-        assert(_local_assemblers.size() == offsets.size());
-        // Starting counting from one; the last cell is handled after the loop.
-        std::size_t i = 0;
-        for (; i < _local_assemblers.size() - 1; ++i)
-        {
-            std::size_t const size = offsets[i + 1] - offsets[i];
-            local_data.resize(size);
-            std::memcpy(local_data.data(), &data[offsets[i]], size);
-            _local_assemblers[i]->readIntegrationPointData(local_data);
-        }
-        {   // last cell
-            std::size_t const size = data.size() - offsets[i];
-            local_data.resize(size);
-            std::memcpy(local_data.data(), &data[offsets[i]], size);
-            _local_assemblers[i]->readIntegrationPointData(local_data);
-        }
     }
 
     void preTimestepConcreteProcess(GlobalVector const& x, double const t,
                                     double const dt) override
     {
-        DBUG("PreTimestep SmallDeformationProcess.");
+        DBUG("PreTimestep SmallDeformationNonlocalProcess.");
 
         _process_data.dt = dt;
         _process_data.t = t;
 
         GlobalExecutor::executeMemberOnDereferenced(
-            &SmallDeformationLocalAssemblerInterface::preTimestep,
+            &SmallDeformationNonlocalLocalAssemblerInterface::preTimestep,
             _local_assemblers, *_local_to_global_index_map, x, t, dt);
     }
 
-    void postTimestepConcreteProcess(GlobalVector const& x) override
+    void postTimestepConcreteProcess(GlobalVector const& /*x*/) override
     {
-        DBUG("PostTimestep SmallDeformationProcess.");
+        DBUG("PostTimestep SmallDeformationNonlocalProcess.");
 
-        GlobalExecutor::executeMemberOnDereferenced(
-            &SmallDeformationLocalAssemblerInterface::postTimestep,
-            _local_assemblers, *_local_to_global_index_map, x);
+        GlobalExecutor::executeDereferenced(
+            [this](const std::size_t mesh_item_id,
+                   LocalAssemblerInterface& local_assembler,
+                   const NumLib::LocalToGlobalIndexMap& dof_table,
+                   std::vector<double>& node_values) {
+                auto const indices =
+                    NumLib::getIndices(mesh_item_id, dof_table);
+                std::vector<double> local_data;
+
+                local_assembler.getNodalValues(local_data);
+
+                assert(local_data.size() == indices.size());
+                for (std::size_t i = 0; i < indices.size(); ++i)
+                    for (int dim = 0; dim < DisplacementDim; ++dim)
+                        node_values[indices[i]] += local_data[i];
+            },
+            _local_assemblers, *_local_to_global_index_map, *_nodal_forces);
     }
 
 private:
-    SmallDeformationProcessData<DisplacementDim> _process_data;
+    SmallDeformationNonlocalProcessData<DisplacementDim> _process_data;
 
     std::vector<std::unique_ptr<LocalAssemblerInterface>> _local_assemblers;
 
     std::unique_ptr<NumLib::LocalToGlobalIndexMap>
         _local_to_global_index_map_single_component;
+
+    MeshLib::PropertyVector<double>* _nodal_forces = nullptr;
 };
 
-}  // namespace SmallDeformation
+}  // namespace SmallDeformationNonlocal
 }  // namespace ProcessLib

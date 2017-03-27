@@ -72,6 +72,8 @@ public:
     MathLib::MatrixSpecifications getMatrixSpecifications()
         const override final;
 
+    void preAssemble(const double t, GlobalVector const& x) override final;
+
     void assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
                   GlobalMatrix& K, GlobalVector& b,
                   StaggeredCouplingTerm const& coupling_term)
@@ -145,6 +147,11 @@ private:
         NumLib::LocalToGlobalIndexMap const& dof_table,
         MeshLib::Mesh const& mesh,
         unsigned const integration_order) = 0;
+
+    virtual void preAssembleConcreteProcess(const double /*t*/,
+                                            GlobalVector const& /*x*/)
+    {
+    }
 
     virtual void setInitialConditionsConcreteProcess(const double /*t*/,
                                                      GlobalVector const& /*x*/)
