@@ -82,6 +82,12 @@ private:
         _nodal_forces->resize(DisplacementDim * mesh.getNumberOfNodes());
 
         Base::_secondary_variables.addSecondaryVariable(
+            "free_energy_density", 1,
+            makeExtrapolator(getExtrapolator(), _local_assemblers,
+                             &SmallDeformationLocalAssemblerInterface::
+                                 getIntPtFreeEnergyDensity));
+
+        Base::_secondary_variables.addSecondaryVariable(
             "sigma_xx", 1,
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,

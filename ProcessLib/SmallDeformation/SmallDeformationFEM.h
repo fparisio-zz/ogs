@@ -51,6 +51,7 @@ struct IntegrationPointData final
           sigma_prev(std::move(other.sigma_prev)),
           eps(std::move(other.eps)),
           eps_prev(std::move(other.eps_prev)),
+          free_energy_density(std::move(other.free_energy_density)),
           solid_material(other.solid_material),
           material_state_variables(std::move(other.material_state_variables)),
           integration_weight(std::move(other.integration_weight))
@@ -60,6 +61,7 @@ struct IntegrationPointData final
 
     typename BMatricesType::KelvinVectorType sigma, sigma_prev;
     typename BMatricesType::KelvinVectorType eps, eps_prev;
+    double free_energy_density = 0;
 
     MaterialLib::Solids::MechanicsBase<DisplacementDim>& solid_material;
     std::unique_ptr<typename MaterialLib::Solids::MechanicsBase<
@@ -91,6 +93,9 @@ struct SmallDeformationLocalAssemblerInterface
       public ProcessLib::SmallDeformation::NodalForceCalculationInterface,
       public NumLib::ExtrapolatableElement
 {
+    virtual std::vector<double> const& getIntPtFreeEnergyDensity(
+        std::vector<double>& cache) const = 0;
+
     virtual std::vector<double> const& getIntPtSigmaXX(
         std::vector<double>& cache) const = 0;
 
@@ -281,6 +286,7 @@ public:
         {
             _ip_data[ip].pushBackState();
         }
+
     }
 
     std::vector<double> const& getNodalForces(
@@ -300,6 +306,20 @@ public:
 
         // assumes N is stored contiguously in memory
         return Eigen::Map<const Eigen::RowVectorXd>(N.data(), N.size());
+    }
+
+    std::vector<double> const& getIntPtFreeEnergyDensity(
+        std::vector<double>& cache) const override
+    {
+        cache.clear();
+        cache.reserve(_ip_data.size());
+
+        for (auto const& ip_data : _ip_data)
+        {
+            cache.push_back(ip_data.free_energy_density);
+        }
+
+        return cache;
     }
 
     std::vector<double> const& getIntPtSigmaXX(
