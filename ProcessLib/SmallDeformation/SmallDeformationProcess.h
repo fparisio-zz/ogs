@@ -62,6 +62,18 @@ private:
     void preTimestepConcreteProcess(GlobalVector const& x, double const t,
                                     double const dt) override;
 
+    void postTimestepConcreteProcess(GlobalVector const& x) override
+    {
+        DBUG("PostTimestep SmallDeformationProcess.");
+
+        ProcessLib::SmallDeformation::writeNodalForces(
+            *_nodal_forces, _local_assemblers, *_local_to_global_index_map);
+
+        ProcessLib::SmallDeformation::writeMaterialForces(
+            *_material_forces, _local_assemblers, *_local_to_global_index_map,
+            x);
+    }
+
 private:
     SmallDeformationProcessData<DisplacementDim> _process_data;
 
@@ -70,6 +82,7 @@ private:
     std::unique_ptr<NumLib::LocalToGlobalIndexMap>
         _local_to_global_index_map_single_component;
     MeshLib::PropertyVector<double>* _nodal_forces = nullptr;
+    MeshLib::PropertyVector<double>* _material_forces = nullptr;
 };
 
 extern template class SmallDeformationProcess<2>;
