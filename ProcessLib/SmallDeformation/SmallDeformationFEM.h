@@ -47,6 +47,7 @@ struct IntegrationPointData final
     // The default generated move-ctor is correctly generated for other
     // compilers.
     explicit IntegrationPointData(IntegrationPointData&& other)
+          g_matrices(std::move(other.g_matrices)),
           sigma(std::move(other.sigma)),
           sigma_prev(std::move(other.sigma_prev)),
           eps(std::move(other.eps)),
@@ -147,6 +148,8 @@ public:
     using BMatricesType = BMatrixPolicyType<ShapeFunction, DisplacementDim>;
 
     using BMatrixType = typename BMatricesType::BMatrixType;
+    using GradientVectorType = typename BMatricesType::GradientVectorType;
+    using GradientMatrixType = typename BMatricesType::GradientMatrixType;
     using StiffnessMatrixType = typename BMatricesType::StiffnessMatrixType;
     using NodalForceVectorType = typename BMatricesType::NodalForceVectorType;
     using NodalDisplacementVectorType =
@@ -190,7 +193,8 @@ public:
             ip_data.N = sm.N;
             ip_data.dNdx = sm.dNdx;
 
-            ip_data.sigma.resize(KelvinVectorDimensions<DisplacementDim>::value);
+            ip_data.sigma.resize(
+                KelvinVectorDimensions<DisplacementDim>::value);
             ip_data.sigma_prev.resize(
                 KelvinVectorDimensions<DisplacementDim>::value);
             ip_data.eps.resize(KelvinVectorDimensions<DisplacementDim>::value);
@@ -297,6 +301,18 @@ public:
             NodalDisplacementVectorType, typename BMatricesType::BMatrixType>(
             nodal_values, _integration_method, _ip_data, _element,
             _is_axially_symmetric);
+    }
+
+    std::vector<double> const& getMaterialForces(
+        std::vector<double> const& local_x,
+        std::vector<double>& nodal_values) override
+    {
+        return ProcessLib::SmallDeformation::getMaterialForces<
+            DisplacementDim, ShapeFunction, ShapeMatricesType,
+            typename BMatricesType::NodalForceVectorType,
+            NodalDisplacementVectorType, GradientVectorType,
+            GradientMatrixType>(local_x, nodal_values, _integration_method,
+                                _ip_data, _element, _is_axially_symmetric);
     }
 
     Eigen::Map<const Eigen::RowVectorXd> getShapeMatrix(

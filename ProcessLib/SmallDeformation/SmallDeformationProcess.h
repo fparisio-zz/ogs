@@ -47,6 +47,8 @@ public:
     {
         _nodal_forces = MeshLib::getOrCreateMeshProperty<double>(
             mesh, "NodalForces", MeshLib::MeshItemType::Node, DisplacementDim);
+        _material_forces = MeshLib::getOrCreateMeshProperty<double>(
+            mesh, "MaterialForces", MeshLib::MeshItemType::Node, DisplacementDim);
     }
 
     //! \name ODESystem interface
@@ -80,6 +82,7 @@ private:
                 // by location order is needed for output
                 NumLib::ComponentOrder::BY_LOCATION);
         _nodal_forces->resize(DisplacementDim * mesh.getNumberOfNodes());
+        _material_forces->resize(DisplacementDim * mesh.getNumberOfNodes());
 
         Base::_secondary_variables.addSecondaryVariable(
             "free_energy_density", 1,
@@ -148,6 +151,7 @@ private:
             makeExtrapolator(
                 getExtrapolator(), _local_assemblers,
                 &SmallDeformationLocalAssemblerInterface::getIntPtEpsilonXY));
+
         if (DisplacementDim == 3)
         {
             Base::_secondary_variables.addSecondaryVariable(
@@ -207,12 +211,16 @@ private:
             _local_assemblers, *_local_to_global_index_map, x, t, dt);
     }
 
-    void postTimestepConcreteProcess(GlobalVector const&) override
+    void postTimestepConcreteProcess(GlobalVector const& x) override
     {
         DBUG("PostTimestep SmallDeformationProcess.");
 
         ProcessLib::SmallDeformation::writeNodalForces(
             *_nodal_forces, _local_assemblers, *_local_to_global_index_map);
+
+        ProcessLib::SmallDeformation::writeMaterialForces(
+            *_material_forces, _local_assemblers, *_local_to_global_index_map,
+            x);
     }
 
 private:
@@ -223,6 +231,7 @@ private:
     std::unique_ptr<NumLib::LocalToGlobalIndexMap>
         _local_to_global_index_map_single_component;
     MeshLib::PropertyVector<double>* _nodal_forces = nullptr;
+    MeshLib::PropertyVector<double>* _material_forces = nullptr;
 };
 
 }  // namespace SmallDeformation
