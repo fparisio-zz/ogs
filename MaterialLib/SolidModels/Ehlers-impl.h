@@ -92,7 +92,7 @@ struct OnePlusGamma_pTheta final
     OnePlusGamma_pTheta(double const gamma_p, double const theta,
                         double const m_p)
         : value{1 + gamma_p * theta},
-          // value(1+gamma_p*theta)/(1-gamma_p)
+          // value(1+gamma_p*3.*std::sqrt(3.)/2.*theta)/(1-gamma_p)
           pow_m_p{std::pow(value, m_p)},
           pow_m_p1{pow_m_p / value}
     {
@@ -126,11 +126,31 @@ typename SolidEhlers<DisplacementDim>::KelvinVector plasticFlowDeviatoricPart(
             (s.D + s.J_2 * m_p * gamma_p * dtheta_dsigma / one_gt.value)) /
            (2 * sqrtPhi);
 }
+
+template <int DisplacementDim>
+double updateBounding(
+    double const t, ProcessLib::SpatialPosition const& x,
+    double const eps_p_eff,
+    typename SolidEhlers<DisplacementDim>::MaterialProperties const& mp)
+{
+    double const r_h0 = mp.r_h0(t, x)[0];
+    double const a_h = mp.a_h(t, x)[0];
+    // hardening variable r_h (bounding surface plasticity)
+
+    double r_h = r_h0 + eps_p_eff / (eps_p_eff + a_h);
+
+    if (r_h>1.0)
+        r_h=1.0;
+
+    return r_h;
+}
+
 template <int DisplacementDim>
 double yieldFunction(
     PhysicalStressWithInvariants<DisplacementDim> const& s,
     typename SolidEhlers<DisplacementDim>::MaterialProperties const& mp,
-    double const t, ProcessLib::SpatialPosition const& x)
+    double const t, ProcessLib::SpatialPosition const& x,
+    double const r_h)
 {
     double const alpha = mp.alpha(t, x)[0];
     double const beta = mp.beta(t, x)[0];
@@ -147,9 +167,10 @@ double yieldFunction(
                                     gamma * s.J_3 /
                                         boost::math::pow<3>(std::sqrt(s.J_2)),
                                 m) +
-               alpha / 2. * I_1_squared +
-               boost::math::pow<2>(delta) * boost::math::pow<2>(I_1_squared)) +
-           beta * s.I_1 + epsilon * I_1_squared - mp.k;
+               r_h * alpha / 2. * I_1_squared +
+               boost::math::pow<2>(delta) * r_h * boost::math::pow<2>(I_1_squared)) +
+           std::sqrt(r_h) * beta * s.I_1 +
+            std::sqrt(r_h) * epsilon * I_1_squared - std::sqrt(r_h) * mp.k;
     //std::pow((1 +gamma * s.J_3 / boost::math::pow<3>(std::sqrt(s.J_2)))/(1-gamma),m)
 }
 
@@ -165,6 +186,7 @@ void calculatePlasticResidual(
     double const eps_p_V,
     double const eps_p_V_dot,
     double const eps_p_eff_dot,
+    double const eps_p_eff,
     double const lambda,
     typename SolidEhlers<DisplacementDim>::MaterialProperties const& _mp,
     typename SolidEhlers<DisplacementDim>::ResidualVectorType& residual)
@@ -224,8 +246,10 @@ void calculatePlasticResidual(
         std::sqrt(2. / 3. * lambda_flow_D.transpose() * lambda_flow_D);
 
     // yield function (for plastic multiplier)
+    double r_h = updateBounding<DisplacementDim>(t, x, eps_p_eff, _mp);
+
     residual(2 * KelvinVectorSize + 2) =
-        yieldFunction<DisplacementDim>(s, _mp, t, x) / G;
+        yieldFunction<DisplacementDim>(s, _mp, t, x, r_h) / G;
 }
 
 template <int DisplacementDim>
@@ -348,11 +372,6 @@ void calculatePlasticJacobian(
 
     double const G = _mp.G(t, x)[0];
     double const K = _mp.K(t, x)[0];
-    double const m = _mp.m(t, x)[0];
-    double const alpha = _mp.alpha(t, x)[0];
-    double const beta = _mp.beta(t, x)[0];
-    double const gamma = _mp.gamma(t, x)[0];
-    double const delta = _mp.delta(t, x)[0];
 
     double const alpha_p = _mp.alpha_p(t, x)[0];
     double const beta_p = _mp.beta_p(t, x)[0];
@@ -524,7 +543,6 @@ void calculatePlasticJacobian(
 template <int DisplacementDim>
 void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
     double const t, ProcessLib::SpatialPosition const& x,
-    double const dt,
     KelvinVector const& sigma,
     typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
         material_state_variables)
@@ -539,7 +557,11 @@ void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
     _state.kappa_d = _state.kappa_d_prev;
 
     // Compute damage current step
-    double const eps_p_V_dot = (_state.eps_p_V - _state.eps_p_V_prev);
+    double r_h = updateBounding<DisplacementDim>(t, x, _state.eps_p_eff, _mp);
+
+    if (r_h>=1.0)
+    {
+    double const eps_p_V_dot = _state.eps_p_V - _state.eps_p_V_prev;
     if (eps_p_V_dot > 0)
     {
         double const h_d = _damage_properties->h_d(t, x)[0];
@@ -593,6 +615,8 @@ void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
         _state.kappa_d += eps_p_V_dot / x_s;
     }
     assert(_state.kappa_d > 0.);
+    }
+
 }
 
 template <int DisplacementDim>
@@ -720,8 +744,10 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
     PhysicalStressWithInvariants<DisplacementDim> s{G * sigma};
     // Quit early if sigma is zero (nothing to do) or if we are still in elastic
     // zone.
+    double r_h = updateBounding<DisplacementDim>(t, x, _state.eps_p_eff, _mp);
+
     if (sigma.squaredNorm() == 0 ||
-        yieldFunction<DisplacementDim>(s, _mp, t, x) < 0)
+        yieldFunction<DisplacementDim>(s, _mp, t, x, r_h) < 0)
     {
         C.setZero();
         C.template topLeftCorner<3, 3>().setConstant(K - 2. / 3 * G);
@@ -746,7 +772,7 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
                     (_state.eps_p_eff - _state.eps_p_eff_prev) / dt;
                 calculatePlasticResidual<DisplacementDim>(
                     t, x, eps_D, eps_V, s, _state.eps_p_D, eps_p_D_dot,
-                    _state.eps_p_V, eps_p_V_dot, eps_p_eff_dot, _state.lambda,
+                    _state.eps_p_V, eps_p_V_dot, eps_p_eff_dot, _state.eps_p_eff ,_state.lambda,
                     _mp, residual);
             };
 
@@ -817,7 +843,7 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
 
         if (_damage_properties)
         {
-            calculateLocalKappaD(t, x, dt, sigma, _state);
+            calculateLocalKappaD(t, x, sigma, _state);
 
             if (_compute_local_damage)  // The non-local damage update is called
                                        // from the FEM.

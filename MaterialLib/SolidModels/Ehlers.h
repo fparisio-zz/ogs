@@ -82,7 +82,9 @@ public:
                            P const& beta_p_, P const& gamma_p_,
                            P const& delta_p_, P const& epsilon_p_,
                            P const& m_p_, P const& kappa_,
-                           P const& hardening_coefficient_)
+                           P const& hardening_coefficient_,
+                           P const& r_h0_,
+                           P const& a_h_)
             : G(G_),
               K(K_),
               alpha(alpha_),
@@ -98,7 +100,9 @@ public:
               epsilon_p(epsilon_p_),
               m_p(m_p_),
               kappa(kappa_),
-              hardening_coefficient(hardening_coefficient_)
+              hardening_coefficient(hardening_coefficient_),
+              r_h0(r_h0_),
+              a_h(a_h_)
         {
         }
         // basic material parameters
@@ -121,6 +125,9 @@ public:
 
         P const& kappa;
         P const& hardening_coefficient;
+
+        P const& r_h0;
+        P const& a_h;
         // Drucker-Prager: Import kappa and beta in terms of Drucker-Prager
         // criterion solution dependent values
         double k;
@@ -144,6 +151,7 @@ public:
             eps_p_V = eps_p_V_prev;
             eps_p_eff = eps_p_eff_prev;
             kappa_d = kappa_d_prev;
+            r_ha = r_ha_prev;
             damage = damage_prev;
             lambda = 0;
         }
@@ -154,6 +162,7 @@ public:
             eps_p_V_prev = eps_p_V;
             eps_p_eff_prev = eps_p_eff;  // effective part of trace(eps_p)
             kappa_d_prev = kappa_d;
+            r_ha_prev = r_ha;
             damage_prev = damage;
             lambda = 0;
         }
@@ -169,6 +178,7 @@ public:
         double eps_p_V = 0;    ///< volumetric strain
         double eps_p_eff = 0;  ///< effective plastic strain
         double kappa_d = 0;    ///< damage driving variable
+        double r_ha = 0;    ///< bounding surface driving variable
         double damage = 0;     ///< isotropic damage variable
 
         // Initial values from previous timestep
@@ -176,6 +186,7 @@ public:
         double eps_p_V_prev = 0;    ///< \copydoc eps_p_V
         double eps_p_eff_prev = 0;  ///< \copydoc eps_p_eff
         double kappa_d_prev = 0;    ///< \copydoc kappa_d
+        double r_ha_prev = 0;    ///< \copydoc kappa_d
         double damage_prev = 0;     ///< \copydoc damage
         double lambda = 0;          ///< plastic multiplier
 
@@ -187,10 +198,12 @@ public:
                << "eps_p_D: " << m.eps_p_D << "\n"
                << "eps_p_eff: " << m.eps_p_eff << "\n"
                << "kappa_d: " << m.kappa_d << "\n"
+               << "r_ha: " << m.r_ha << "\n"
                << "damage: " << m.damage << "\n"
                << "eps_p_D_prev: " << m.eps_p_D_prev << "\n"
                << "eps_p_eff_prev: " << m.eps_p_eff_prev << "\n"
                << "kappa_d_prev: " << m.kappa_d_prev << "\n"
+               << "r_ha_prev: " << m.r_ha_prev << "\n"
                << "damage_prev: " << m.damage_prev << "\n"
                << "lambda: " << m.lambda << "\n";
             return os;
@@ -251,10 +264,10 @@ public:
         double const kappa_d,
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
             material_state_variables);
+
 private:
     void calculateLocalKappaD(
         double const t, ProcessLib::SpatialPosition const& x,
-        double const dt,
         KelvinVector const& sigma,
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
             material_state_variables);
