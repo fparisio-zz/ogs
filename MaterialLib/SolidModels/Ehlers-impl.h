@@ -137,20 +137,14 @@ double updateBounding(
     double const a_h = mp.a_h(t, x)[0];
     // hardening variable r_h (bounding surface plasticity)
 
-    double r_h = r_h0 + eps_p_eff / (eps_p_eff + a_h);
-
-    if (r_h>1.0)
-        r_h=1.0;
-
-    return r_h;
+    return std::min(1.0, r_h0 + eps_p_eff / (eps_p_eff + a_h));
 }
 
 template <int DisplacementDim>
 double yieldFunction(
     PhysicalStressWithInvariants<DisplacementDim> const& s,
     typename SolidEhlers<DisplacementDim>::MaterialProperties const& mp,
-    double const t, ProcessLib::SpatialPosition const& x,
-    double const r_h)
+    double const t, ProcessLib::SpatialPosition const& x, double const r_h)
 {
     double const alpha = mp.alpha(t, x)[0];
     double const beta = mp.beta(t, x)[0];
@@ -162,15 +156,14 @@ double yieldFunction(
     double const I_1_squared = boost::math::pow<2>(s.I_1);
     assert(s.J_2 != 0);
 
-    return std::sqrt(
-               s.J_2 * std::pow(1 +
-                                    gamma * s.J_3 /
-                                        boost::math::pow<3>(std::sqrt(s.J_2)),
-                                m) +
-               r_h * alpha / 2. * I_1_squared +
-               boost::math::pow<2>(delta) * r_h * boost::math::pow<2>(I_1_squared)) +
-           std::sqrt(r_h) * beta * s.I_1 +
-            std::sqrt(r_h) * epsilon * I_1_squared - std::sqrt(r_h) * mp.k;
+    return std::sqrt(s.J_2 * std::pow(1 +
+                                          gamma * s.J_3 / boost::math::pow<3>(
+                                                              std::sqrt(s.J_2)),
+                                      m) +
+                     r_h * alpha / 2. * I_1_squared +
+                     boost::math::pow<2>(delta) * r_h *
+                         boost::math::pow<2>(I_1_squared)) +
+           r_h * beta * s.I_1 + r_h * epsilon * I_1_squared - r_h * mp.k;
     //std::pow((1 +gamma * s.J_3 / boost::math::pow<3>(std::sqrt(s.J_2)))/(1-gamma),m)
 }
 
@@ -188,6 +181,7 @@ void calculatePlasticResidual(
     double const eps_p_eff_dot,
     double const eps_p_eff,
     double const lambda,
+    double const r_h,
     typename SolidEhlers<DisplacementDim>::MaterialProperties const& _mp,
     typename SolidEhlers<DisplacementDim>::ResidualVectorType& residual)
 {
@@ -244,9 +238,6 @@ void calculatePlasticResidual(
     residual(2 * KelvinVectorSize + 1) =
         eps_p_eff_dot -
         std::sqrt(2. / 3. * lambda_flow_D.transpose() * lambda_flow_D);
-
-    // yield function (for plastic multiplier)
-    double r_h = updateBounding<DisplacementDim>(t, x, eps_p_eff, _mp);
 
     residual(2 * KelvinVectorSize + 2) =
         yieldFunction<DisplacementDim>(s, _mp, t, x, r_h) / G;
@@ -556,67 +547,68 @@ void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
     // strain rate is positive (dilatancy).
     _state.kappa_d = _state.kappa_d_prev;
 
-    // Compute damage current step
-    double r_h = updateBounding<DisplacementDim>(t, x, _state.eps_p_eff, _mp);
+    if (_state.r_ha < 1.0)
+        return;
 
-    if (r_h>=1.0)
-    {
     double const eps_p_V_dot = _state.eps_p_V - _state.eps_p_V_prev;
-    if (eps_p_V_dot > 0)
+    if (eps_p_V_dot <= 0)
+        return;
+    double const h_d = _damage_properties->h_d(t, x)[0];
+
+    Eigen::Matrix<double, DisplacementDim, DisplacementDim> stress_mat =
+        Eigen::Matrix<double, DisplacementDim, DisplacementDim>::Zero();
+    double const G = _mp.G(t, x)[0];
+
+    for (int i = 0; i < DisplacementDim; ++i)
+        for (int j = 0; j < DisplacementDim; ++j)
+        {
+            if (i == j)
+            {
+                stress_mat(i, j) = G * sigma(i);
+            }
+            else
+            {
+                stress_mat(i, j) = G * sigma(i + j + 2);
+            };
+        };
+
+    Eigen::EigenSolver<decltype(stress_mat)> eigen_solver(stress_mat);
+    auto const& principal_stress = eigen_solver.eigenvalues();
+    // building kappa_d (damage driving variable)
+    double prod_stress = 0.;
+    for (int i = 0; i < DisplacementDim; ++i)
     {
-        double const h_d = _damage_properties->h_d(t, x)[0];
-
-        Eigen::Matrix<double,DisplacementDim,DisplacementDim> stress_mat
-                        = Eigen::Matrix<double,DisplacementDim,DisplacementDim>::Zero();
-        double const G = _mp.G(t, x)[0];
-
-        for (int i=0;i<DisplacementDim;++i)
-            for (int j=0;j<DisplacementDim;++j){
-                 if (i==j){
-                 stress_mat(i,j)=G*sigma(i);
-                 }else{
-                 stress_mat(i,j)=G*sigma(i+j+2);
-                 };
-           };
-
-         Eigen::EigenSolver<decltype(stress_mat)> eigen_solver(stress_mat);
-                auto const& principal_stress=eigen_solver.eigenvalues();
-                // building kappa_d (damage driving variable)
-         double prod_stress = 0.;
-         for (int i = 0; i < DisplacementDim; ++i)
-         {
-          Eigen::Matrix<double, DisplacementDim, 1> eig_val;
-          eig_val(i, 0) = real(principal_stress(i, 0));
-          prod_stress = prod_stress + eig_val(i, 0)*eig_val(i, 0);
-          }
-
-        // Brittleness decrease with confinement for the nonlinear flow rule.
-        // ATTENTION: For linear flow rule -> constant brittleness.
-        double const beta = _mp.beta(t, x)[0];
-        double const kappa = _mp.kappa(t, x)[0];
-
-        double f_t=std::sqrt(3.0)*kappa/(1+std::sqrt(3.0)*beta);
-
-        double x_s=0;
-        double r_s = std::sqrt(prod_stress)/f_t;
-
-        if (r_s < 1)
-        {
-            x_s=1;
-        }
-        else if (r_s>=1 && r_s<=2)
-        {
-            x_s = 1 + h_d * (r_s-1) * (r_s-1);
-        }
-        else
-        {
-            x_s = 1 - 3 * h_d + 4 * h_d * std::sqrt(r_s-1);
-        }
-        _state.kappa_d += eps_p_V_dot / x_s;
+        Eigen::Matrix<double, DisplacementDim, 1> eig_val;
+        eig_val(i, 0) = real(principal_stress(i, 0));
+        prod_stress = prod_stress + eig_val(i, 0) * eig_val(i, 0);
     }
+
+    // Brittleness decrease with confinement for the nonlinear flow
+    // rule.
+    // ATTENTION: For linear flow rule -> constant brittleness.
+    double const beta = _mp.beta(t, x)[0];
+    double const kappa = _mp.kappa(t, x)[0];
+
+    double f_t = std::sqrt(3.0) * kappa / (1 + std::sqrt(3.0) * beta);
+
+    double x_s = 0;
+    double r_s = std::sqrt(prod_stress) / f_t;
+
+    if (r_s < 1)
+    {
+        x_s = 1;
+    }
+    else if (r_s >= 1 && r_s <= 2)
+    {
+        x_s = 1 + h_d * (r_s - 1) * (r_s - 1);
+    }
+    else
+    {
+        x_s = 1 - 3 * h_d + 4 * h_d * std::sqrt(r_s - 1);
+    }
+    _state.kappa_d += eps_p_V_dot / x_s;
+
     assert(_state.kappa_d > 0.);
-    }
-
 }
 
 template <int DisplacementDim>
@@ -744,10 +736,10 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
     PhysicalStressWithInvariants<DisplacementDim> s{G * sigma};
     // Quit early if sigma is zero (nothing to do) or if we are still in elastic
     // zone.
-    double r_h = updateBounding<DisplacementDim>(t, x, _state.eps_p_eff, _mp);
+    _state.r_ha = updateBounding<DisplacementDim>(t, x, _state.eps_p_eff, _mp);
 
     if (sigma.squaredNorm() == 0 ||
-        yieldFunction<DisplacementDim>(s, _mp, t, x, r_h) < 0)
+        yieldFunction<DisplacementDim>(s, _mp, t, x, _state.r_ha) < 0)
     {
         C.setZero();
         C.template topLeftCorner<3, 3>().setConstant(K - 2. / 3 * G);
@@ -772,8 +764,9 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
                     (_state.eps_p_eff - _state.eps_p_eff_prev) / dt;
                 calculatePlasticResidual<DisplacementDim>(
                     t, x, eps_D, eps_V, s, _state.eps_p_D, eps_p_D_dot,
-                    _state.eps_p_V, eps_p_V_dot, eps_p_eff_dot, _state.eps_p_eff ,_state.lambda,
-                    _mp, residual);
+                    _state.eps_p_V, eps_p_V_dot, eps_p_eff_dot,
+                    _state.eps_p_eff, _state.r_ha, _state.lambda, _mp,
+                    residual);
             };
 
             auto const update_jacobian = [&](JacobianMatrix& jacobian) {
@@ -790,9 +783,6 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
                     increment.template segment<KelvinVectorSize>(
                         KelvinVectorSize * 1);
                 _state.eps_p_V += increment(KelvinVectorSize * 2);
-                if (_state.eps_p_V < _state.eps_p_V_prev)
-                    OGS_FATAL("Ehlers. eps_p_V < eps_p_V_prev: %g < %g",
-                              _state.eps_p_V, _state.eps_p_V_prev);
                 _state.eps_p_eff += increment(KelvinVectorSize * 2 + 1);
                 if (_state.eps_p_eff < _state.eps_p_eff_prev)
                     OGS_FATAL("Ehlers. eps_p_eff < eps_p_eff_prev: %g < %g",

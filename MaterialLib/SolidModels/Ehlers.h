@@ -178,7 +178,7 @@ public:
         double eps_p_V = 0;    ///< volumetric strain
         double eps_p_eff = 0;  ///< effective plastic strain
         double kappa_d = 0;    ///< damage driving variable
-        double r_ha = 0;    ///< bounding surface driving variable
+        double r_ha = 0;       ///< bounding surface driving variable
         double damage = 0;     ///< isotropic damage variable
 
         // Initial values from previous timestep
@@ -186,7 +186,7 @@ public:
         double eps_p_V_prev = 0;    ///< \copydoc eps_p_V
         double eps_p_eff_prev = 0;  ///< \copydoc eps_p_eff
         double kappa_d_prev = 0;    ///< \copydoc kappa_d
-        double r_ha_prev = 0;    ///< \copydoc kappa_d
+        double r_ha_prev = 0;       ///< \copydoc r_ha
         double damage_prev = 0;     ///< \copydoc damage
         double lambda = 0;          ///< plastic multiplier
 
