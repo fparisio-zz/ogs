@@ -33,6 +33,7 @@
 #pragma once
 
 #include <boost/math/special_functions/pow.hpp>
+#include <iostream>
 #include <logog/include/logog.hpp>
 #include "MaterialLib/SolidModels/KelvinVector.h"
 #include "NumLib/NewtonRaphson.h"
@@ -138,6 +139,8 @@ double updateBounding(
     // hardening variable r_h (bounding surface plasticity)
 
     return std::min(1.0, r_h0 + eps_p_eff / (eps_p_eff + a_h));
+    std::cout << "boungin"
+              << std::min(1.0, r_h0 + eps_p_eff / (eps_p_eff + a_h));
 }
 
 template <int DisplacementDim>
@@ -156,15 +159,16 @@ double yieldFunction(
     double const I_1_squared = boost::math::pow<2>(s.I_1);
     assert(s.J_2 != 0);
 
-    return std::sqrt(s.J_2 * std::pow(1 +
-                                          gamma * s.J_3 / boost::math::pow<3>(
-                                                              std::sqrt(s.J_2)),
-                                      m) +
-                     r_h * alpha / 2. * I_1_squared +
-                     boost::math::pow<2>(delta) * r_h *
-                         boost::math::pow<2>(I_1_squared)) +
-           r_h * beta * s.I_1 + r_h * epsilon * I_1_squared - r_h * mp.k;
-    //std::pow((1 +gamma * s.J_3 / boost::math::pow<3>(std::sqrt(s.J_2)))/(1-gamma),m)
+    return std::sqrt(
+               s.J_2 * std::pow(1 +
+                                    gamma * s.J_3 /
+                                        boost::math::pow<3>(std::sqrt(s.J_2)),
+                                m) +
+               alpha / 2. * I_1_squared +
+               boost::math::pow<2>(delta) * boost::math::pow<2>(I_1_squared)) +
+           r_h * beta * s.I_1 + epsilon * I_1_squared - mp.k;
+    // std::pow((1 +gamma * s.J_3 /
+    // boost::math::pow<3>(std::sqrt(s.J_2)))/(1-gamma),m)
 }
 
 template <int DisplacementDim>
@@ -226,7 +230,7 @@ void calculatePlasticResidual(
 
     // plastic volume strain
     {
-        double const beta_p = _mp.beta_p(t, x)[0];
+        double const beta_p = r_h * _mp.beta_p(t, x)[0];
         double const epsilon_p = _mp.epsilon_p(t, x)[0];
 
         double const flow_V = plasticFlowVolumetricPart<DisplacementDim>(
@@ -245,10 +249,10 @@ void calculatePlasticResidual(
 
 template <int DisplacementDim>
 ProcessLib::KelvinVectorType<DisplacementDim> derivatives_F(
-    double const t,
-    ProcessLib::SpatialPosition const& x,
+    double const t, ProcessLib::SpatialPosition const& x,
     PhysicalStressWithInvariants<DisplacementDim> const& s,
-    typename SolidEhlers<DisplacementDim>::MaterialProperties const& _mp)
+    typename SolidEhlers<DisplacementDim>::MaterialProperties const& _mp,
+    double const r_h)
 {
     static int const KelvinVectorSize =
         ProcessLib::KelvinVectorDimensions<DisplacementDim>::value;
@@ -258,7 +262,7 @@ ProcessLib::KelvinVectorType<DisplacementDim> derivatives_F(
     double const G = _mp.G(t, x)[0];
     double const m = _mp.m(t, x)[0];
     double const alpha = _mp.alpha(t, x)[0];
-    double const beta = _mp.beta(t, x)[0];
+    double const beta = r_h * _mp.beta(t, x)[0];
     double const gamma = _mp.gamma(t, x)[0];
     double const epsilon = _mp.epsilon(t, x)[0];
     double const delta = _mp.delta(t, x)[0];
@@ -293,10 +297,10 @@ ProcessLib::KelvinVectorType<DisplacementDim> derivatives_F(
 
 template <int DisplacementDim>
 ProcessLib::KelvinVectorType<DisplacementDim> derivatives_G(
-    double const t,
-    ProcessLib::SpatialPosition const& x,
+    double const t, ProcessLib::SpatialPosition const& x,
     PhysicalStressWithInvariants<DisplacementDim> const& s,
-    typename SolidEhlers<DisplacementDim>::MaterialProperties const& _mp)
+    typename SolidEhlers<DisplacementDim>::MaterialProperties const& _mp,
+    double const r_h)
 {
     static int const KelvinVectorSize =
         ProcessLib::KelvinVectorDimensions<DisplacementDim>::value;
@@ -306,7 +310,7 @@ ProcessLib::KelvinVectorType<DisplacementDim> derivatives_G(
     double const G = _mp.G(t, x)[0];
 
     double const alpha_p = _mp.alpha_p(t, x)[0];
-    double const beta_p = _mp.beta_p(t, x)[0];
+    double const beta_p = r_h * _mp.beta_p(t, x)[0];
     double const gamma_p = _mp.gamma_p(t, x)[0];
     double const delta_p = _mp.delta_p(t, x)[0];
     double const epsilon_p = _mp.epsilon_p(t, x)[0];
@@ -335,8 +339,8 @@ ProcessLib::KelvinVectorType<DisplacementDim> derivatives_G(
         (alpha_p * s.I_1 +
          4. * boost::math::pow<2>(delta_p) * boost::math::pow<3>(s.I_1)) *
             identity2;
-    KelvinVector const dG_dsigma = G * 1. / 2. / sqrtPhi * dPhi_dsigma + G *
-                                   beta_p * identity2 +
+    KelvinVector const dG_dsigma = G * 1. / 2. / sqrtPhi * dPhi_dsigma +
+                                   G * beta_p * identity2 +
                                    G * 2. * epsilon_p * s.I_1 * identity2;
 
     return dG_dsigma;
@@ -350,6 +354,7 @@ void calculatePlasticJacobian(
     typename SolidEhlers<DisplacementDim>::JacobianMatrix& jacobian,
     PhysicalStressWithInvariants<DisplacementDim> const& s,
     double const lambda,
+    double const r_h,
     typename SolidEhlers<DisplacementDim>::MaterialProperties const& _mp)
 {
     static int const KelvinVectorSize =
@@ -365,7 +370,7 @@ void calculatePlasticJacobian(
     double const K = _mp.K(t, x)[0];
 
     double const alpha_p = _mp.alpha_p(t, x)[0];
-    double const beta_p = _mp.beta_p(t, x)[0];
+    double const beta_p = r_h * _mp.beta_p(t, x)[0];
     double const gamma_p = _mp.gamma_p(t, x)[0];
     double const delta_p = _mp.delta_p(t, x)[0];
     double const epsilon_p = _mp.epsilon_p(t, x)[0];
@@ -522,7 +527,7 @@ void calculatePlasticJacobian(
 
     // G_51
     jacobian.template block<1, KelvinVectorSize>(2 * KelvinVectorSize + 2, 0)
-          .noalias() = derivatives_F(t, x, s, _mp).transpose() / G;
+        .noalias() = derivatives_F(t, x, s, _mp, r_h).transpose() / G;
 
     // G_54
     jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
@@ -727,8 +732,8 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
         // sigma_eff=sigma_prev / (1-damage)
         sigma_eff_prev = sigma_prev / (1 - _state.damage_prev);
     }
-    KelvinVector sigma =
-        predict_sigma<DisplacementDim>(G, K, sigma_eff_prev, eps, eps_prev, eps_V);
+    KelvinVector sigma = predict_sigma<DisplacementDim>(G, K, sigma_eff_prev,
+                                                        eps, eps_prev, eps_V);
 
     // update parameter
     _mp.calculateIsotropicHardening(t, x, _state.eps_p_eff);
@@ -736,6 +741,8 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
     PhysicalStressWithInvariants<DisplacementDim> s{G * sigma};
     // Quit early if sigma is zero (nothing to do) or if we are still in elastic
     // zone.
+
+    // Compute bounding surface parameter
     _state.r_ha = updateBounding<DisplacementDim>(t, x, _state.eps_p_eff, _mp);
 
     if (sigma.squaredNorm() == 0 ||
@@ -770,8 +777,8 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
             };
 
             auto const update_jacobian = [&](JacobianMatrix& jacobian) {
-                calculatePlasticJacobian<DisplacementDim>(dt, t, x, jacobian, s,
-                                                          _state.lambda, _mp);
+                calculatePlasticJacobian<DisplacementDim>(
+                    dt, t, x, jacobian, s, _state.lambda, _state.r_ha, _mp);
             };
 
             auto const update_solution = [&](
@@ -784,15 +791,15 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
                         KelvinVectorSize * 1);
                 _state.eps_p_V += increment(KelvinVectorSize * 2);
                 _state.eps_p_eff += increment(KelvinVectorSize * 2 + 1);
-                if (_state.eps_p_eff < _state.eps_p_eff_prev)
-                    OGS_FATAL("Ehlers. eps_p_eff < eps_p_eff_prev: %g < %g",
-                              _state.eps_p_eff, _state.eps_p_eff_prev);
+                // if (_state.eps_p_eff < _state.eps_p_eff_prev)
+                //    OGS_FATAL("Ehlers. eps_p_eff < eps_p_eff_prev: %g < %g",
+                //              _state.eps_p_eff, _state.eps_p_eff_prev);
                 _state.lambda += increment(KelvinVectorSize * 2 + 2);
-                if (_state.lambda < 0)
-                    OGS_FATAL(
-                        "Ehlers: Got negative plastic multiplier; Lambda = %g "
-                        "< 0",
-                        _state.lambda);
+                // if (_state.lambda < 0)
+                //    OGS_FATAL(
+                "Ehlers: Got negative plastic multiplier; Lambda = %g "
+                "< 0",
+                //        _state.lambda);
 
                 _mp.calculateIsotropicHardening(t, x, _state.eps_p_eff);
             };
@@ -836,99 +843,106 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
             calculateLocalKappaD(t, x, sigma, _state);
 
             if (_compute_local_damage)  // The non-local damage update is called
-                                       // from the FEM.
+                                        // from the FEM.
                 updateDamage(t, x, _state.kappa_d, material_state_variables);
         }
         // Compute damage update of consistent tangent matrix
-    Eigen::Matrix<double, KelvinVectorSize, KelvinVectorSize, Eigen::RowMajor>
-        dam_matrix = Eigen::Matrix<double, KelvinVectorSize, KelvinVectorSize,
-                                   Eigen::RowMajor>::Zero();
-    //KelvinVector str_2 = G * s;
-    //auto strs= G * s;
-    KelvinVector dFds = derivatives_F(t, x, s, _mp);
-    KelvinVector dGds = derivatives_G(t, x, s, _mp);
-    //    C=C+C;
-    KelvinMatrix De;
-    De.setZero();
-    De.template topLeftCorner<3, 3>().setConstant(K - 2. / 3 * G);
-    De.noalias() += 2 * G * KelvinMatrix::Identity();
+        Eigen::Matrix<double, KelvinVectorSize, KelvinVectorSize,
+                      Eigen::RowMajor>
+            dam_matrix =
+                Eigen::Matrix<double, KelvinVectorSize, KelvinVectorSize,
+                              Eigen::RowMajor>::Zero();
+        // KelvinVector str_2 = G * s;
+        // auto strs= G * s;
+        KelvinVector dFds = derivatives_F(t, x, s, _mp, _state.r_ha);
+        KelvinVector dGds = derivatives_G(t, x, s, _mp, _state.r_ha);
+        //    C=C+C;
+        KelvinMatrix De;
+        De.setZero();
+        De.template topLeftCorner<3, 3>().setConstant(K - 2. / 3 * G);
+        De.noalias() += 2 * G * KelvinMatrix::Identity();
 
-    // Compute x_s
-    double const h_d = _damage_properties->h_d(t, x)[0];
+        // Compute x_s
+        double const h_d = _damage_properties->h_d(t, x)[0];
 
-    Eigen::Matrix<double,DisplacementDim,DisplacementDim> stress_mat
-                    = Eigen::Matrix<double,DisplacementDim,DisplacementDim>::Zero();
+        Eigen::Matrix<double, DisplacementDim, DisplacementDim> stress_mat =
+            Eigen::Matrix<double, DisplacementDim, DisplacementDim>::Zero();
 
-    for (int i=0;i<DisplacementDim;++i)
-        for (int j=0;j<DisplacementDim;++j){
-             if (i==j){
-             stress_mat(i,j)=G*sigma(i);
-             }else{
-             stress_mat(i,j)=G*sigma(i+j+2);
-             };
-       };
+        for (int i = 0; i < DisplacementDim; ++i)
+            for (int j = 0; j < DisplacementDim; ++j)
+            {
+                if (i == j)
+                {
+                    stress_mat(i, j) = G * sigma(i);
+                }
+                else
+                {
+                    stress_mat(i, j) = G * sigma(i + j + 2);
+                };
+            };
 
-     Eigen::EigenSolver<decltype(stress_mat)> eigen_solver(stress_mat);
-            auto const& principal_stress=eigen_solver.eigenvalues();
-            // building kappa_d (damage driving variable)
-     double prod_stress = 0.;
-     for (int i = 0; i < DisplacementDim; ++i)
-     {
-      Eigen::Matrix<double, DisplacementDim, 1> eig_val;
-      eig_val(i, 0) = real(principal_stress(i, 0));
-      prod_stress = prod_stress + eig_val(i, 0)*eig_val(i, 0);
-      }
-    double const beta = _mp.beta(t, x)[0];
-    double const kappa = _mp.kappa(t, x)[0];
-    double f_t=std::sqrt(3.)*kappa/(1+std::sqrt(3.)*beta);
-    double r_s = std::sqrt(prod_stress)/f_t;
-    double x_s=0.;
-    if (r_s < 1.)
-    {
-        x_s=1.;
-    }
-    else if (r_s>=1. && r_s<=2.)
-    {
-        x_s = 1. + h_d * (r_s-1.) * (r_s-1.);
-    }
-    else
-    {
-        x_s = 1. - 3. * h_d + 4. * h_d * std::sqrt(r_s-1.);
-    }
+        Eigen::EigenSolver<decltype(stress_mat)> eigen_solver(stress_mat);
+        auto const& principal_stress = eigen_solver.eigenvalues();
+        // building kappa_d (damage driving variable)
+        double prod_stress = 0.;
+        for (int i = 0; i < DisplacementDim; ++i)
+        {
+            Eigen::Matrix<double, DisplacementDim, 1> eig_val;
+            eig_val(i, 0) = real(principal_stress(i, 0));
+            prod_stress = prod_stress + eig_val(i, 0) * eig_val(i, 0);
+        }
+        double const beta = _mp.beta(t, x)[0];
+        double const kappa = _mp.kappa(t, x)[0];
+        double f_t = std::sqrt(3.) * kappa / (1 + std::sqrt(3.) * beta);
+        double r_s = std::sqrt(prod_stress) / f_t;
+        double x_s = 0.;
+        if (r_s < 1.)
+        {
+            x_s = 1.;
+        }
+        else if (r_s >= 1. && r_s <= 2.)
+        {
+            x_s = 1. + h_d * (r_s - 1.) * (r_s - 1.);
+        }
+        else
+        {
+            x_s = 1. - 3. * h_d + 4. * h_d * std::sqrt(r_s - 1.);
+        }
 
-    auto const& identity2 = Invariants::identity2;
-    auto const& dk_dep = 1. / x_s * identity2;
-    double const alpha_d = _damage_properties->alpha_d(t, x)[0];
-    double const beta_d = _damage_properties->beta_d(t, x)[0];
-    double dw_dk = - (beta_d - 1.) * std::exp(-_state.kappa_d/alpha_d);
+        auto const& identity2 = Invariants::identity2;
+        auto const& dk_dep = 1. / x_s * identity2;
+        double const alpha_d = _damage_properties->alpha_d(t, x)[0];
+        double const beta_d = _damage_properties->beta_d(t, x)[0];
+        double dw_dk = -(beta_d - 1.) * std::exp(-_state.kappa_d / alpha_d);
 
-    double sca_1 = dk_dep.transpose() * dGds;
-    double sca_2 = dw_dk *sca_1;
-    KelvinVector vec_1 = dFds.transpose() * De;
-    KelvinMatrix mat_1 = sigma * vec_1.transpose();
-    double hard_mod = _mp.kappa(t, x)[0] * _mp.hardening_coefficient(t, x)[0] *
-                      1. / 3. * (_state.eps_p_D).transpose() * (P_dev * dGds);
-    KelvinVector vec_2 = De * dGds;
-    double sca_3 = dFds.transpose() * vec_2;
+        double sca_1 = dk_dep.transpose() * dGds;
+        double sca_2 = dw_dk * sca_1;
+        KelvinVector vec_1 = dFds.transpose() * De;
+        KelvinMatrix mat_1 = sigma * vec_1.transpose();
+        double hard_mod = _mp.kappa(t, x)[0] *
+                          _mp.hardening_coefficient(t, x)[0] * 1. / 3. *
+                          (_state.eps_p_D).transpose() * (P_dev * dGds);
+        KelvinVector vec_2 = De * dGds;
+        double sca_3 = dFds.transpose() * vec_2;
 
-    dam_matrix = sca_2 * mat_1 * 1. / (sca_3 + hard_mod);
-    //KelvinMatrix my_mat1 = sigma * (dFds.transpose() * De).transpose();
-    //double my_sca1 = dFds.transpose() * (De * dGds);
+        dam_matrix = sca_2 * mat_1 * 1. / (sca_3 + hard_mod);
+        // KelvinMatrix my_mat1 = sigma * (dFds.transpose() * De).transpose();
+        // double my_sca1 = dFds.transpose() * (De * dGds);
 
-    // int testing= (P_dev.transpose() * dGds).eval();
-    // int testing = ((_state.eps_p_D).transpose() * (P_dev * dGds)).eval();
-    //    KelvinMatrix my_mat3 = sigma.transpose() * my_vec;
+        // int testing= (P_dev.transpose() * dGds).eval();
+        // int testing = ((_state.eps_p_D).transpose() * (P_dev * dGds)).eval();
+        //    KelvinMatrix my_mat3 = sigma.transpose() * my_vec;
 
         // Extract consistent tangent.
-        //C.noalias() = (1. - _state.damage) *
+        // C.noalias() = (1. - _state.damage) *
         //    _mp.G(t, x)[0] *
         //    linear_solver.solve(-dresidual_deps)
-        //        .template block<KelvinVectorSize, KelvinVectorSize>(0, 0) - dam_matrix;
+        //        .template block<KelvinVectorSize, KelvinVectorSize>(0, 0) -
+        //        dam_matrix;
         // Use elastic predictor
         C.setZero();
         C.template topLeftCorner<3, 3>().setConstant(K - 2. / 3 * G);
         C.noalias() += 2 * G * KelvinMatrix::Identity();
-
     }
     // Update sigma.
     if (_damage_properties && _compute_local_damage)
