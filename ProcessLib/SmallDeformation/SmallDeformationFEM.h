@@ -12,6 +12,7 @@
 #include <memory>
 #include <vector>
 
+#include "MaterialLib/SolidModels/Ehlers.h"
 #include "MaterialLib/SolidModels/LinearElasticIsotropic.h"
 #include "MaterialLib/SolidModels/Lubby2.h"
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
@@ -24,6 +25,9 @@
 #include "ProcessLib/LocalAssemblerTraits.h"
 #include "ProcessLib/Parameter/Parameter.h"
 #include "ProcessLib/Utils/InitShapeMatrices.h"
+
+#include "ProcessLib/IntegrationPointSerialization.h"
+#include "ProcessLib/SmallDeformationCommon/integration_point_data.h"
 
 #include "SmallDeformationProcessData.h"
 
@@ -90,7 +94,8 @@ struct SecondaryData
 struct SmallDeformationLocalAssemblerInterface
     : public ProcessLib::LocalAssemblerInterface,
       public ProcessLib::SmallDeformation::NodalForceCalculationInterface,
-      public NumLib::ExtrapolatableElement
+      public NumLib::ExtrapolatableElement,
+      public ProcessLib::IntegrationPointSerialization
 {
     virtual std::vector<double> const& getIntPtSigmaXX(
         std::vector<double>& cache) const = 0;
@@ -130,11 +135,12 @@ struct SmallDeformationLocalAssemblerInterface
 };
 
 template <typename ShapeFunction, typename IntegrationMethod,
-          int DisplacementDim>
+          int DisplacementDim_>
 class SmallDeformationLocalAssembler
     : public SmallDeformationLocalAssemblerInterface
 {
 public:
+    static int const DisplacementDim = DisplacementDim_;
     using ShapeMatricesType =
         ShapeMatrixPolicyType<ShapeFunction, DisplacementDim>;
     using NodalMatrixType = typename ShapeMatricesType::NodalMatrixType;
@@ -291,6 +297,38 @@ public:
             NodalDisplacementVectorType>(nodal_values, _integration_method,
                                          _ip_data, _element.getID());
     }
+
+    friend void
+    readSmallDeformationIntegrationPointData<SmallDeformationLocalAssembler>(
+        std::vector<char> const& data,
+        SmallDeformationLocalAssembler& local_assembler);
+    void readIntegrationPointData(std::vector<char> const& data) override
+    {
+        readSmallDeformationIntegrationPointData(data, *this);
+    }
+
+    friend OGS::SmallDeformationCommon
+    getSmallDeformationCommonIntegrationPointData<
+        SmallDeformationLocalAssembler>(
+        SmallDeformationLocalAssembler const& local_assembler);
+    std::size_t writeIntegrationPointData(std::vector<char>& data) override
+    {
+        unsigned const n_integration_points =
+            _integration_method.getNumberOfPoints();
+
+        OGS::ElementData element_data;
+        element_data.set_element_id(_element.getID());
+        element_data.set_n_integration_points(n_integration_points);
+
+        auto small_deformation_data = element_data.mutable_small_deformation();
+        auto common = small_deformation_data->mutable_common();
+        common->CopyFrom(getSmallDeformationCommonIntegrationPointData(*this));
+
+        data.resize(element_data.ByteSize());
+        element_data.SerializeToArray(data.data(), element_data.ByteSize());
+
+        return element_data.ByteSize();
+    };
 
     Eigen::Map<const Eigen::RowVectorXd> getShapeMatrix(
         const unsigned integration_point) const override

@@ -59,6 +59,7 @@ add_library(ProcessLib ${SOURCES})
 target_link_libraries(ProcessLib
     MaterialLib
     MeshGeoToolsLib
+    SerializationLib
     NumLib # for shape matrices
     ${VTK_LIBRARIES}
 )
