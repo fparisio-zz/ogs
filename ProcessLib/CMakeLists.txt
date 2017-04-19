@@ -25,6 +25,7 @@ add_subdirectory(TwoPhaseFlowWithPrho)
 APPEND_SOURCE_FILES(SOURCES TwoPhaseFlowWithPrho)
 
 add_subdirectory(SmallDeformation)
+APPEND_SOURCE_FILES(SOURCES SmallDeformationCommon)
 APPEND_SOURCE_FILES(SOURCES SmallDeformation)
 
 add_subdirectory(LIE/SmallDeformation)
