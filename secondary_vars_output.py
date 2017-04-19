@@ -83,7 +83,7 @@ def averageOverIntegrationPointsSigma(element_data):
         print("Error: Got 0 integration points.")
         sys.exit(2)
 
-    sd = element_data.small_deformation
+    sd = element_data.small_deformation_nonlocal.common
     result = np.array([0.0, 0.0, 0.0, 0.0])
     for i in range(element_data.n_integration_points):
         result += sd.sigma[i].value
@@ -94,7 +94,7 @@ def averageOverIntegrationPointsEpsPD(element_data):
         print("Error: Got 0 integration points.")
         sys.exit(2)
 
-    sd = element_data.small_deformation
+    sd = element_data.small_deformation_nonlocal.common
     result = np.array([0.0, 0.0, 0.0, 0.0])
     for i in range(element_data.n_integration_points):
         result += sd.material_state[i].ehlers.eps_p_D.value
@@ -106,7 +106,7 @@ def averageOverIntegrationPointsEpsPV(element_data):
         print("Error: Got 0 integration points.")
         sys.exit(2)
 
-    sd = element_data.small_deformation
+    sd = element_data.small_deformation_nonlocal.common
     result = 0;
     for i in range(element_data.n_integration_points):
         result += sd.material_state[i].ehlers.eps_p_V
@@ -117,7 +117,7 @@ def averageOverIntegrationPointsEpsPEff(element_data):
         print("Error: Got 0 integration points.")
         sys.exit(2)
 
-    sd = element_data.small_deformation
+    sd = element_data.small_deformation_nonlocal.common
     result = 0;
     for i in range(element_data.n_integration_points):
         result += sd.material_state[i].ehlers.eps_p_eff
@@ -128,7 +128,7 @@ def averageOverIntegrationPointsKappaD(element_data):
         print("Error: Got 0 integration points.")
         sys.exit(2)
 
-    sd = element_data.small_deformation
+    sd = element_data.small_deformation_nonlocal.common
     result = 0;
     for i in range(element_data.n_integration_points):
         result += sd.material_state[i].ehlers.kappa_d
@@ -139,11 +139,19 @@ def averageOverIntegrationPointsDamage(element_data):
         print("Error: Got 0 integration points.")
         sys.exit(2)
 
-    sd = element_data.small_deformation
+    sd = element_data.small_deformation_nonlocal.common
     result = 0;
     for i in range(element_data.n_integration_points):
         result += sd.material_state[i].ehlers.damage
     return result / element_data.n_integration_points
+
+def averageOverIntegrationPointsNonlocalDamage(element_data):
+    if element_data.n_integration_points == 0:
+        print("Error: Got 0 integration points.")
+        sys.exit(2)
+
+    sd = element_data.small_deformation_nonlocal
+    return sum(sd.nonlocal_damage) / element_data.n_integration_points
 
 def processIntegrationPointData(filename):
     m = readMesh(filename)
@@ -158,6 +166,7 @@ def processIntegrationPointData(filename):
     np_eps_p_eff = np.empty([m.GetNumberOfCells(), 1])
     np_kappa_d = np.empty([m.GetNumberOfCells(), 1])
     np_damage = np.empty([m.GetNumberOfCells(), 1])
+    np_nonlocal = np.empty([m.GetNumberOfCells(), 1])
 
     for ed in element_data:
         np_sigma[ed.element_id] = averageOverIntegrationPointsSigma(ed)
@@ -166,6 +175,7 @@ def processIntegrationPointData(filename):
         np_eps_p_eff[ed.element_id] = averageOverIntegrationPointsEpsPEff(ed)
         np_kappa_d[ed.element_id] = averageOverIntegrationPointsKappaD(ed)
         np_damage[ed.element_id] = averageOverIntegrationPointsDamage(ed)
+        np_nonlocal[ed.element_id] = averageOverIntegrationPointsNonlocalDamage(ed)
 
     sigma = numpy_to_vtk(np_sigma);
     sigma.SetName("sigma")
@@ -190,6 +200,10 @@ def processIntegrationPointData(filename):
     damage = numpy_to_vtk(np_damage);
     damage.SetName("damage")
     m.GetCellData().AddArray(damage)
+
+    nonlocal_damage = numpy_to_vtk(np_nonlocal);
+    nonlocal_damage.SetName("nonlocal_damage")
+    m.GetCellData().AddArray(nonlocal_damage)
 
     writeMesh(m, filename)
 
