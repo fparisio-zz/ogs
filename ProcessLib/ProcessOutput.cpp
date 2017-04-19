@@ -10,6 +10,7 @@
 #include "ProcessOutput.h"
 
 #include "MeshLib/IO/VtkIO/VtuInterface.h"
+#include "MeshLib/Mesh.h"
 #include "NumLib/DOF/LocalToGlobalIndexMap.h"
 
 namespace ProcessLib
@@ -38,6 +39,10 @@ ProcessOutput::ProcessOutput(BaseLib::ConfigTree const& output_config)
     {
         output_residuals = *out_resid;
     }
+
+    output_integration_point_data =
+        //! \ogs_file_param{prj__time_loop__processes__process__output__integration_point_data}
+        output_config.getConfigParameter("integration_point_data", false);
 }
 
 void doProcessOutput(
@@ -188,11 +193,11 @@ void doProcessOutput(
     if (process_output.output_integration_point_data &&
         integration_point_writer)
     {
-        auto result = getOrCreateMeshProperty<char>(
+        auto result = MeshLib::getOrCreateMeshProperty<char>(
             mesh, "integration_point_data",
-            MeshLib::MeshItemType::IntegrationPoint);
-        auto offsets = getOrCreateMeshProperty<std::size_t>(
-            mesh, "integration_point_offsets", MeshLib::MeshItemType::Cell);
+            MeshLib::MeshItemType::IntegrationPoint, 0);
+        auto offsets = MeshLib::getOrCreateMeshProperty<std::size_t>(
+            mesh, "integration_point_offsets", MeshLib::MeshItemType::Cell, 1);
         integration_point_writer(*result, *offsets);
     }
 
