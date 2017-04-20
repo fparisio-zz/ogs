@@ -451,13 +451,18 @@ void calculatePlasticJacobian(
         double const eps_0 = _mp.hardening_coefficient(t, x)[0];
         if (eps_p_eff < cutoff)
         {
+            double const xx = df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], cutoff, eps_0);
             jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
                 df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], cutoff, eps_0);
+            ERR("DFcutoff %g, eps %g", xx, eps_p_eff);
         }
         else if (eps_p_eff < eps_0)
         {
+            double const xx =
+                df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], eps_p_eff, eps_0);
             jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
                 df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], eps_p_eff, eps_0);
+            ERR("DFeps %g, eps %g", xx, eps_p_eff);
         }
         // For eps_p_eff >= eps_0 the jacobian remains zero.
     }
@@ -597,6 +602,7 @@ void SolidEhlers<DisplacementDim>::MaterialProperties::
     {
         k = f(kappa(t, x)[0], r0(t, x)[0], eps_p_eff,
               hardening_coefficient(t, x)[0]);
+        ERR("KKKKK %g, eps %g", k, eps_p_eff);
     }
 }
 
