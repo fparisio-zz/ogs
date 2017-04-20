@@ -431,24 +431,26 @@ void calculatePlasticJacobian(
     }
 
     // G_54
-    // jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
-    //    -_mp.kappa(t, x)[0] * _mp.hardening_coefficient(t, x)[0] / G;
-
-    if (eps_p_eff > 1.e-15)
     {
-        if (eps_p_eff < (1. - _mp.r0(t, x)[0]) * (1. - _mp.r0(t, x)[0]) /
-                            _mp.hardening_coefficient(t, x)[0])
+        double const cutoff = 1e-15;
+        double const eps_0 = _mp.hardening_coefficient(t, x)[0];
+        if (eps_p_eff < cutoff)
         {
             jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
-                -_mp.kappa(t, x)[0] * _mp.hardening_coefficient(t, x)[0] /
-                (2. *
-                 std::sqrt(eps_p_eff * _mp.hardening_coefficient(t, x)[0]) * G);
+                -_mp.kappa(t, x)[0] * (1 - _mp.r0(t, x)[0]) * 2 *
+                (cutoff - eps_0) / eps_0 /
+                std::sqrt(1 - boost::math::pow<2>((cutoff - eps_0) / eps_0));
         }
+        else if (eps_p_eff < eps_0)
+        {
+            jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
+                -_mp.kappa(t, x)[0] * (1 - _mp.r0(t, x)[0]) * 2 *
+                (eps_p_eff - eps_0) / eps_0 /
+                std::sqrt(1 - boost::math::pow<2>((eps_p_eff - eps_0) / eps_0));
+        }
+        // For eps_p_eff >= eps_0 the jacobian remains zero.
     }
-    else
-    {
-        jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) = 0.0;
-    }
+
     // G_52, G_53, G_55 are zero
 }
 
@@ -471,8 +473,7 @@ void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
     // Compute damage current step
     double const eps_p_V_dot = _state.eps_p_V - _state.eps_p_V_prev;
 
-    if (_state.eps_p_eff >= (1. - _mp.r0(t, x)[0]) * (1. - _mp.r0(t, x)[0]) /
-                                _mp.hardening_coefficient(t, x)[0])
+    if (_state.eps_p_eff >= _mp.hardening_coefficient(t, x)[0])
     {
         if (eps_p_V_dot > 0)
         {
@@ -577,16 +578,16 @@ void SolidEhlers<DisplacementDim>::MaterialProperties::
                                 double const eps_p_eff)
 {
     k = kappa(t, x)[0];
-    if (eps_p_eff > (1. - r0(t, x)[0]) * (1. - r0(t, x)[0]) /
-                        hardening_coefficient(t, x)[0])
-        return;
 
-    if (eps_p_eff > 0)
-        k *= (r0(t, x)[0] +
-              std::sqrt(eps_p_eff * hardening_coefficient(t, x)[0]));
-    return;
-
-    k *= r0(t, x)[0];
+    if (eps_p_eff < hardening_coefficient(t, x)[0])
+    {
+        k *=
+            r0(t, x)[0] +
+            (1 - r0(t, x)[0]) *
+                std::sqrt(1 - boost::math::pow<2>(
+                                  (eps_p_eff - hardening_coefficient(t, x)[0]) /
+                                  hardening_coefficient(t, x)[0]));
+    }
 }
 
 template <int DisplacementDim>
