@@ -589,8 +589,11 @@ void SolidEhlers<DisplacementDim>::MaterialProperties::
                                 double const eps_p_eff)
 {
     k = kappa(t, x)[0];
-
-    if (eps_p_eff < hardening_coefficient(t, x)[0])
+    if (eps_p_eff <= 0)
+    {
+        k = 0;
+    }
+    else if (eps_p_eff < hardening_coefficient(t, x)[0])
     {
         k = f(kappa(t, x)[0], r0(t, x)[0], eps_p_eff,
               hardening_coefficient(t, x)[0]);
