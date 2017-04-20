@@ -36,6 +36,21 @@
 #include <logog/include/logog.hpp>
 #include "MaterialLib/SolidModels/KelvinVector.h"
 
+namespace
+{
+double f(double const k, double const r0, double const eps, double const eps_0)
+{
+    return k * (r0 +
+                (1 - r0) *
+                    std::sqrt(1 - boost::math::pow<2>((eps - eps_0) / eps_0)));
+};
+double df(double const k, double const r0, double const eps, double const eps_0)
+{
+    return -k * (1 - r0) * 2 * (eps - eps_0) / eps_0 /
+           std::sqrt(1 - boost::math::pow<2>((eps - eps_0) / eps_0));
+};
+}
+
 namespace MaterialLib
 {
 namespace Solids
@@ -437,16 +452,12 @@ void calculatePlasticJacobian(
         if (eps_p_eff < cutoff)
         {
             jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
-                -_mp.kappa(t, x)[0] * (1 - _mp.r0(t, x)[0]) * 2 *
-                (cutoff - eps_0) / eps_0 /
-                std::sqrt(1 - boost::math::pow<2>((cutoff - eps_0) / eps_0));
+                df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], cutoff, eps_0);
         }
         else if (eps_p_eff < eps_0)
         {
             jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
-                -_mp.kappa(t, x)[0] * (1 - _mp.r0(t, x)[0]) * 2 *
-                (eps_p_eff - eps_0) / eps_0 /
-                std::sqrt(1 - boost::math::pow<2>((eps_p_eff - eps_0) / eps_0));
+                df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], eps_p_eff, eps_0);
         }
         // For eps_p_eff >= eps_0 the jacobian remains zero.
     }
@@ -581,12 +592,8 @@ void SolidEhlers<DisplacementDim>::MaterialProperties::
 
     if (eps_p_eff < hardening_coefficient(t, x)[0])
     {
-        k *=
-            r0(t, x)[0] +
-            (1 - r0(t, x)[0]) *
-                std::sqrt(1 - boost::math::pow<2>(
-                                  (eps_p_eff - hardening_coefficient(t, x)[0]) /
-                                  hardening_coefficient(t, x)[0]));
+        k = f(kappa(t, x)[0], r0(t, x)[0], eps_p_eff,
+              hardening_coefficient(t, x)[0]);
     }
 }
 
