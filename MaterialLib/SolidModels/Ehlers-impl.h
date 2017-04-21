@@ -32,6 +32,7 @@
  */
 #pragma once
 
+#include <iostream>
 #include <boost/math/special_functions/pow.hpp>
 #include <logog/include/logog.hpp>
 #include "MaterialLib/SolidModels/KelvinVector.h"
@@ -46,8 +47,10 @@ double f(double const k, double const r0, double const eps, double const eps_0)
 };
 double df(double const k, double const r0, double const eps, double const eps_0)
 {
-    return -k * (1 - r0) * 2 * (eps - eps_0) / eps_0 /
-           std::sqrt(1 - boost::math::pow<2>((eps - eps_0) / eps_0));
+    //return -k * (1 - r0) * 2 * (eps - eps_0) / eps_0 /
+     //      std::sqrt(1 - boost::math::pow<2>((eps - eps_0) / eps_0));
+    return -k * (r0 - 1) * (eps_0 - eps) /
+           (eps_0 * std::sqrt(eps * (2 * eps_0 - eps)));
 };
 }
 
@@ -454,7 +457,7 @@ void calculatePlasticJacobian(
             double const xx = df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], cutoff, eps_0);
             jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
                 df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], cutoff, eps_0);
-            ERR("DFcutoff %g, eps %g", xx, eps_p_eff);
+            std::cerr << "DFcutoff " << xx << ", eps " << eps_p_eff;
         }
         else if (eps_p_eff < eps_0)
         {
@@ -462,7 +465,7 @@ void calculatePlasticJacobian(
                 df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], eps_p_eff, eps_0);
             jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
                 df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], eps_p_eff, eps_0);
-            ERR("DFeps %g, eps %g", xx, eps_p_eff);
+            std::cerr << "DFeps " << xx << ", eps " << eps_p_eff;
         }
         // For eps_p_eff >= eps_0 the jacobian remains zero.
     }
@@ -596,14 +599,14 @@ void SolidEhlers<DisplacementDim>::MaterialProperties::
     k = kappa(t, x)[0];
     if (eps_p_eff <= 0)
     {
-        k = 0;
+        k = kappa(t, x)[0] * r0(t, x)[0];
     }
     else if (eps_p_eff < hardening_coefficient(t, x)[0])
     {
         k = f(kappa(t, x)[0], r0(t, x)[0], eps_p_eff,
               hardening_coefficient(t, x)[0]);
-        ERR("KKKKK %g, eps %g", k, eps_p_eff);
     }
+    std::cerr << "KKKKK " << k << " eps " << eps_p_eff << "\n";
 }
 
 template <int DisplacementDim>
