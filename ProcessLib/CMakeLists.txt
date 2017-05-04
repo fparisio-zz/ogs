@@ -59,10 +59,14 @@ add_library(ProcessLib ${SOURCES})
 target_link_libraries(ProcessLib
     MaterialLib
     MeshGeoToolsLib
-    SerializationLib
     NumLib # for shape matrices
     ${VTK_LIBRARIES}
 )
+if(Protobuf_FOUND)
+target_link_libraries(ProcessLib
+    SerializationLib
+)
+endif()
 
 ADD_VTK_DEPENDENCY(ProcessLib)
 

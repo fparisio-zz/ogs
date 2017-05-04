@@ -22,5 +22,10 @@ append_source_files(SOURCES TwoPhaseModels)
 add_library(MaterialLib ${SOURCES} )
 target_link_libraries(MaterialLib
     BaseLib
+)
+
+if(Protobuf_FOUND)
+target_link_libraries(MaterialLib
     SerializationLib
 )
+endif()
