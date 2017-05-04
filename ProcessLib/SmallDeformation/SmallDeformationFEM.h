@@ -349,6 +349,7 @@ public:
         readSmallDeformationIntegrationPointData(data, *this);
     }
 
+#ifdef PROTOBUF_FOUND
     friend OGS::SmallDeformationCommon
     getSmallDeformationCommonIntegrationPointData<
         SmallDeformationLocalAssembler>(
@@ -372,6 +373,13 @@ public:
 
         return element_data.ByteSize();
     };
+#else
+    std::size_t writeIntegrationPointData(std::vector<char>& data) override
+    {
+	return 0;
+
+    }
+#endif
 
     std::vector<double> const& getNodalValues(
         std::vector<double>& nodal_values) const override
