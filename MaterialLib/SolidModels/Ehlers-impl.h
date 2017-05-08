@@ -457,7 +457,7 @@ void calculatePlasticJacobian(
             double const xx = df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], cutoff, eps_0);
             jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
                 df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], cutoff, eps_0);
-            std::cerr << "DFcutoff " << xx << ", eps " << eps_p_eff;
+            //std::cerr << "DFcutoff " << xx << ", eps " << eps_p_eff;
         }
         else if (eps_p_eff < eps_0)
         {
@@ -465,7 +465,7 @@ void calculatePlasticJacobian(
                 df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], eps_p_eff, eps_0);
             jacobian(2 * KelvinVectorSize + 2, 2 * KelvinVectorSize + 1) =
                 df(_mp.kappa(t, x)[0], _mp.r0(t, x)[0], eps_p_eff, eps_0);
-            std::cerr << "DFeps " << xx << ", eps " << eps_p_eff;
+            //std::cerr << "DFeps " << xx << ", eps " << eps_p_eff;
         }
         // For eps_p_eff >= eps_0 the jacobian remains zero.
     }
@@ -490,13 +490,13 @@ void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
     _state.kappa_d = _state.kappa_d_prev;
 
     // Compute damage current step
-    double const eps_p_V_dot = _state.eps_p_V - _state.eps_p_V_prev;
+    double const eps_p_eff_dot = _state.eps_p_eff - _state.eps_p_eff_prev;
 
-    if (_state.eps_p_eff >= _mp.hardening_coefficient(t, x)[0])
+    //if (_state.eps_p_eff >= _mp.hardening_coefficient(t, x)[0])
     {
-        if (eps_p_V_dot > 0)
+        if (eps_p_eff_dot > 0)
         {
-            _state.kappa_d += eps_p_V_dot;
+            _state.kappa_d += eps_p_eff_dot;
         }
         assert(_state.kappa_d > 0.);
     }
@@ -606,7 +606,7 @@ void SolidEhlers<DisplacementDim>::MaterialProperties::
         k = f(kappa(t, x)[0], r0(t, x)[0], eps_p_eff,
               hardening_coefficient(t, x)[0]);
     }
-    std::cerr << "KKKKK " << k << " eps " << eps_p_eff << "\n";
+    //std::cerr << "KKKKK " << k << " eps " << eps_p_eff << "\n";
 }
 
 template <int DisplacementDim>
