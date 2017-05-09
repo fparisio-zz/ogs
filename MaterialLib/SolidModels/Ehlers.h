@@ -219,10 +219,13 @@ public:
     explicit SolidEhlers(
         NumLib::NewtonRaphsonSolverParameters nonlinear_solver_parameters,
         MaterialProperties material_properties,
-        std::unique_ptr<EhlersDamageProperties>&& damage_properties)
+        std::unique_ptr<EhlersDamageProperties>&& damage_properties,
+        bool const compute_local_damage = true)
         : _nonlinear_solver_parameters(std::move(nonlinear_solver_parameters)),
           _mp(std::move(material_properties)),
-          _damage_properties(std::move(damage_properties))
+          _damage_properties(std::move(damage_properties)),
+          _compute_local_damage(compute_local_damage)
+
     {
     }
 
@@ -238,11 +241,18 @@ public:
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
             material_state_variables) override;
 
-private:
-    /// Computes the damage internal material variable explicitly based on the
-    /// results obtained from the local stress return algorithm.
-    void updateDamage(
+    /// Updates the internal damage based on the given kappa_damage value.
+    /// \returns the new updated damage value.
+    double updateDamage(
         double const t, ProcessLib::SpatialPosition const& x,
+        double const kappa_damage,
+        typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
+            material_state_variables);
+
+private:
+    void calculateLocalKappaD(
+        double const t, ProcessLib::SpatialPosition const& x, double const dt,
+        KelvinVector const& sigma,
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
             material_state_variables);
 
@@ -251,6 +261,7 @@ private:
 
     MaterialProperties _mp;
     std::unique_ptr<EhlersDamageProperties> _damage_properties;
+    bool const _compute_local_damage;
 };
 
 }  // namespace Ehlers
