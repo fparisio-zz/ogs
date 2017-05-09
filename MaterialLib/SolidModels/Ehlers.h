@@ -161,6 +161,11 @@ public:
             lambda = 0;
         }
 
+        double getLocalVariable() const override
+        {
+            return kappa_d;
+        }
+
         using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;
 
         KelvinVector eps_p_D;  ///< deviatoric plastic strain
