@@ -57,17 +57,17 @@ struct MechanicsBase
     /// constitutive relation compute function.
     /// Returns false in case of errors in the computation if Newton iterations
     /// did not converge, for example.
-    bool computeConstitutiveRelation(
-        double const t,
-        ProcessLib::SpatialPosition const& x,
-        double const dt,
-        Eigen::Matrix<double, Eigen::Dynamic, 1> const& eps_prev,
-        Eigen::Matrix<double, Eigen::Dynamic, 1> const& eps,
-        Eigen::Matrix<double, Eigen::Dynamic, 1> const& sigma_prev,
-        Eigen::Matrix<double, Eigen::Dynamic, 1>& sigma,
-        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>&
-            C,
-        MaterialStateVariables& material_state_variables)
+    std::tuple<KelvinVector,
+               std::unique_ptr<MaterialStateVariables>,
+               std::unique_ptr<KelvinMatrix>>
+    integrateStress(double const t,
+                    ProcessLib::SpatialPosition const& x,
+                    double const dt,
+                    Eigen::Matrix<double, Eigen::Dynamic, 1> const& eps_prev,
+                    Eigen::Matrix<double, Eigen::Dynamic, 1> const& eps,
+                    Eigen::Matrix<double, Eigen::Dynamic, 1> const& sigma_prev,
+                    Eigen::Matrix<double, Eigen::Dynamic, 1> const& sigma,
+                    MaterialStateVariables const& material_state_variables)
     {
         // TODO Avoid copies of data:
         // Using MatrixBase<Derived> not possible because template functions
@@ -77,23 +77,18 @@ struct MechanicsBase
         KelvinVector const eps_prev_{eps_prev};
         KelvinVector const eps_{eps};
         KelvinVector const sigma_prev_{sigma_prev};
-        KelvinVector sigma_{sigma};
-        KelvinMatrix C_{C};
+        KelvinVector const sigma_{sigma};
 
-        bool const result =
-            computeConstitutiveRelation(t,
+        auto&& result = integrateStress(t,
                                         x,
                                         dt,
                                         eps_prev_,
                                         eps_,
                                         sigma_prev_,
                                         sigma_,
-                                        C_,
                                         material_state_variables);
 
-        sigma = sigma_;
-        C = C_;
-        return result;
+        return std::move(result);
     }
 
     /// Computation of the constitutive relation for specific material model.
@@ -102,16 +97,17 @@ struct MechanicsBase
     /// wrapper function.
     /// Returns false in case of errors in the computation if Newton iterations
     /// did not converge, for example.
-    virtual bool computeConstitutiveRelation(
-        double const t,
-        ProcessLib::SpatialPosition const& x,
-        double const dt,
-        KelvinVector const& eps_prev,
-        KelvinVector const& eps,
-        KelvinVector const& sigma_prev,
-        KelvinVector& sigma,
-        KelvinMatrix& C,
-        MaterialStateVariables& material_state_variables) = 0;
+    virtual std::tuple<KelvinVector,
+                       std::unique_ptr<MaterialStateVariables>,
+                       std::unique_ptr<KelvinMatrix>>
+    integrateStress(double const t,
+                    ProcessLib::SpatialPosition const& x,
+                    double const dt,
+                    KelvinVector const& eps_prev,
+                    KelvinVector const& eps,
+                    KelvinVector const& sigma_prev,
+                    KelvinVector const& sigma,
+                    MaterialStateVariables const& material_state_variables) = 0;
 
     virtual ~MechanicsBase() = default;
 };
