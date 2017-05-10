@@ -201,11 +201,10 @@ assembleBlockMatricesWithJacobian(
         auto const& B = ip_data.b_matrices;
         auto const& eps_prev = ip_data.eps_prev;
         auto const& sigma_eff_prev = ip_data.sigma_eff_prev;
+        auto& sigma_eff = ip_data.sigma_eff;
 
         auto& eps = ip_data.eps;
-        auto& sigma_eff = ip_data.sigma_eff;
-        auto& C = ip_data.C;
-        auto& material_state_variables = *ip_data.material_state_variables;
+        auto& state = ip_data.material_state_variables;
 
         auto q = ip_data.darcy_velocity.head(GlobalDim);
 
@@ -225,14 +224,25 @@ assembleBlockMatricesWithJacobian(
 
         eps.noalias() = B * u;
 
-        if (!_ip_data[ip].solid_material.computeConstitutiveRelation(
+        std::unique_ptr<KelvinMatrixType<GlobalDim>> C;
+        std::unique_ptr<typename MaterialLib::Solids::MechanicsBase<
+            GlobalDim>::MaterialStateVariables>
+            new_state;
+        std::tie(sigma_eff, new_state, C) =
+            _ip_data[ip].solid_material.integrateStress(
                 t, x_position, _process_data.dt, eps_prev, eps, sigma_eff_prev,
-                sigma_eff, C, material_state_variables))
+                *state);
+
+        if (!new_state)
             OGS_FATAL("Computation of local constitutive relation failed.");
+        state = std::move(new_state);
+
+        if (!C)
+            OGS_FATAL("Computation of tangent stiffness failed.");
 
         q.noalias() = - k_over_mu * (dNdx_p * p + rho_fr * gravity_vec);
 
-        J_uu.noalias() += B.transpose() * C * B * ip_w;
+        J_uu.noalias() += B.transpose() * *C * B * ip_w;
 
         rhs_u.noalias() -= B.transpose() * sigma_eff * ip_w;
         rhs_u.noalias() -= - H_u.transpose() * rho * gravity_vec * ip_w;
@@ -320,8 +330,7 @@ computeSecondaryVariableConcreteWithBlockVectors(
 
         auto& eps = ip_data.eps;
         auto& sigma_eff = ip_data.sigma_eff;
-        auto& C = ip_data.C;
-        auto& material_state_variables = *ip_data.material_state_variables;
+        auto& state = ip_data.material_state_variables;
         double const k_over_mu =
             _process_data.intrinsic_permeability(t, x_position)[0] /
             _process_data.fluid_viscosity(t, x_position)[0];
@@ -331,10 +340,22 @@ computeSecondaryVariableConcreteWithBlockVectors(
 
         eps.noalias() = B * u;
 
-        if (!_ip_data[ip].solid_material.computeConstitutiveRelation(
+        std::unique_ptr<KelvinMatrixType<GlobalDim>> C;
+        std::unique_ptr<typename MaterialLib::Solids::MechanicsBase<
+            GlobalDim>::MaterialStateVariables>
+            new_state;
+        std::tie(sigma_eff, new_state, C) =
+            _ip_data[ip].solid_material.integrateStress(
                 t, x_position, _process_data.dt, eps_prev, eps, sigma_eff_prev,
-                sigma_eff, C, material_state_variables))
+                *state);
+
+        if (!new_state)
             OGS_FATAL("Computation of local constitutive relation failed.");
+        state = std::move(new_state);
+
+        if (!C)
+            OGS_FATAL("Computation of tangent stiffness failed.");
+        ip_data.C = *C;
 
         q.noalias() = - k_over_mu * (dNdx_p * p + rho_fr * gravity_vec);
     }
