@@ -97,7 +97,7 @@ struct MaterialProperties
     P const& hardening_coefficient;
 };
 
-struct EhlersDamageProperties
+struct DamageProperties
 {
     using P = ProcessLib::Parameter<double>;
     P const& alpha_d;
@@ -215,7 +215,7 @@ public:
     explicit SolidEhlers(
         NumLib::NewtonRaphsonSolverParameters nonlinear_solver_parameters,
         MaterialProperties material_properties,
-        std::unique_ptr<EhlersDamageProperties>&& damage_properties)
+        std::unique_ptr<DamageProperties>&& damage_properties)
         : _nonlinear_solver_parameters(std::move(nonlinear_solver_parameters)),
           _mp(std::move(material_properties)),
           _damage_properties(std::move(damage_properties))
@@ -240,7 +240,7 @@ private:
     NumLib::NewtonRaphsonSolverParameters const _nonlinear_solver_parameters;
 
     MaterialProperties _mp;
-    std::unique_ptr<EhlersDamageProperties> _damage_properties;
+    std::unique_ptr<DamageProperties> _damage_properties;
 };
 
 }  // namespace Ehlers
