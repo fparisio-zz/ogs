@@ -241,7 +241,11 @@ private:
     /// Computes the damage internal material variable explicitly based on the
     /// results obtained from the local stress return algorithm.
     void updateDamage(
-        double const t, ProcessLib::SpatialPosition const& x,
+        double const eps_p_V_diff,
+        double const eps_p_eff_diff,
+        Damage const& damage,
+        double const t,
+        ProcessLib::SpatialPosition const& x,
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
             material_state_variables);
 
