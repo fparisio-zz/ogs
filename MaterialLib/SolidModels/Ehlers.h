@@ -41,7 +41,6 @@ namespace Solids
 {
 namespace Ehlers
 {
-
 struct EhlersDamageProperties
 {
     using P = ProcessLib::Parameter<double>;
@@ -161,11 +160,7 @@ public:
             lambda = 0;
         }
 
-        double getLocalVariable() const override
-        {
-            return kappa_d;
-        }
-
+        double getLocalVariable() const override { return kappa_d; }
         using KelvinVector = ProcessLib::KelvinVectorType<DisplacementDim>;
 
         KelvinVector eps_p_D;  ///< deviatoric plastic strain
@@ -281,6 +276,8 @@ private:
     void calculateLocalKappaD(
         double const t, ProcessLib::SpatialPosition const& x, double const dt,
         KelvinVector const& sigma,
+        KelvinVector const& eps_prev,
+        KelvinVector const& eps,
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
             material_state_variables);
 
