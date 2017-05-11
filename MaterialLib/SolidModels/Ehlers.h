@@ -118,13 +118,21 @@ struct PlasticStrain final
     double eff = 0;  ///< effective plastic strain
 };
 
-struct Damage final
+class Damage final
 {
+public:
     Damage(){};
-    Damage(double const kappa_d_, double const damage_)
-        : kappa_d(kappa_d_), damage(damage_){};
-    double kappa_d = 0;  ///< damage driving variable
-    double damage = 0;   ///< isotropic damage variable
+    Damage(double const kappa_d, double const value)
+        : _kappa_d(kappa_d), _value(value)
+    {
+    }
+
+    double kappa_d() const { return _kappa_d; }
+    double value() const { return _value; }
+
+private:
+    double _kappa_d = 0;  ///< damage driving variable
+    double _value = 0;    ///< isotropic damage variable
 };
 
 template <int DisplacementDim>
