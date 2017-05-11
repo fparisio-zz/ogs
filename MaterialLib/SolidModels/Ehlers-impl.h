@@ -662,7 +662,8 @@ void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
         }
 
         double strain_norm_0 =
-            alpha_d * std::log(1. / (1. - _state.damage / (1. - beta_d)));
+            alpha_d *
+            std::pow(std::log(1. / (1. - _state.damage / (0.99))), 1. / beta_d);
         if ((std::sqrt(prod_strain) - strain_norm_0) >= 0)
             if (std::sqrt(d_prod_strain) > 0)
                 _state.kappa_d += std::sqrt(d_prod_strain);
@@ -686,7 +687,12 @@ double SolidEhlers<DisplacementDim>::updateDamage(
     double const beta_d = _damage_properties->beta_d(t, x)[0];
 
     // Update internal damage variable.
-    _state.damage = (1 - beta_d) * (1 - std::exp(-kappa_damage / alpha_d));
+    int pure_damage = 1;
+    if (pure_damage == 1)
+        _state.damage =
+            0.99 * (1 - std::exp(-std::pow(kappa_damage / alpha_d, beta_d)));
+    else
+        _state.damage = (1 - beta_d) * (1 - std::exp(-kappa_damage / alpha_d));
 
     return _state.damage;
 }
@@ -971,11 +977,21 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
 
         double const alpha_d = _damage_properties->alpha_d(t, x)[0];
         double const beta_d = _damage_properties->beta_d(t, x)[0];
+        double g_prime = 0;
+        KelvinVector eta_dam = eps;
 
-        double const g_prime =
-            (1 - beta_d) *
-            (1 + 1. / alpha_d * std::exp(-_state.kappa_d / alpha_d));
-        KelvinVector eta_dam = eps / std::sqrt(prod_strain);
+        if (_state.kappa_d > 0)
+        {
+            g_prime = 0.99 * beta_d *
+                      std::exp(-std::pow(_state.kappa_d / alpha_d, beta_d)) *
+                      std::pow(_state.kappa_d / alpha_d, beta_d) /
+                      _state.kappa_d;
+            eta_dam = eta_dam / std::sqrt(prod_strain);
+        }
+        else
+        {
+            g_prime = 0;
+        }
 
         Eigen::Matrix<double, KelvinVectorSize, KelvinVectorSize,
                       Eigen::RowMajor>
