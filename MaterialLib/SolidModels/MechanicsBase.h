@@ -12,7 +12,11 @@
 #include <memory>
 
 #include "ProcessLib/Deformation/BMatrixPolicy.h"
-#include "ProcessLib/Parameter/Parameter.h"
+
+namespace ProcessLib
+{
+class SpatialPosition;
+}
 
 namespace MeshLib
 {
