@@ -145,14 +145,12 @@ struct MaterialStateVariables
     void setInitialConditions()
     {
         eps_p = eps_p_prev;
-        lambda = 0;
         damage = damage_prev;
     }
 
     void pushBackState() override
     {
         eps_p_prev = eps_p;
-        lambda = 0;
         damage_prev = damage;
     }
 
@@ -163,7 +161,6 @@ struct MaterialStateVariables
 
     // Initial values from previous timestep
     PlasticStrain<KelvinVector> eps_p_prev;  ///< \copydoc eps_p
-    double lambda = 0;                       ///< plastic multiplier
     Damage damage_prev;                      ///< \copydoc damage
 
 #ifndef NDEBUG

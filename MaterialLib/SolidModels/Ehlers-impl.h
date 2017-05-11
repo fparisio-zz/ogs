@@ -588,6 +588,7 @@ newton(double const dt, MaterialPropertiesV const& mp,
     // same matrix. This saves one decomposition.
     Eigen::FullPivLU<JacobianMatrix> linear_solver;
 
+    double lambda = 0;  // plastic multiplier
     auto const update_residual = [&](ResidualVectorType& residual) {
 
         KelvinVector const eps_p_D_dot =
@@ -600,13 +601,11 @@ newton(double const dt, MaterialPropertiesV const& mp,
             mp.kappa, mp.hardening_coefficient, state.eps_p.eff);
         calculatePlasticResidual<DisplacementDim>(
             eps_D, eps_V, s, state.eps_p.D, eps_p_D_dot, state.eps_p.V,
-            eps_p_V_dot, eps_p_eff_dot, state.lambda, k_hardening, mp,
-            residual);
+            eps_p_V_dot, eps_p_eff_dot, lambda, k_hardening, mp, residual);
     };
 
     auto const update_jacobian = [&](JacobianMatrix& jacobian) {
-        calculatePlasticJacobian<DisplacementDim>(dt, jacobian, s, state.lambda,
-                                                  mp);
+        calculatePlasticJacobian<DisplacementDim>(dt, jacobian, s, lambda, mp);
     };
 
     auto const update_solution = [&](ResidualVectorType const& increment) {
@@ -617,7 +616,7 @@ newton(double const dt, MaterialPropertiesV const& mp,
             increment.template segment<KelvinVectorSize>(KelvinVectorSize * 1);
         state.eps_p.V += increment(KelvinVectorSize * 2);
         state.eps_p.eff += increment(KelvinVectorSize * 2 + 1);
-        state.lambda += increment(KelvinVectorSize * 2 + 2);
+        lambda += increment(KelvinVectorSize * 2 + 2);
     };
 
     auto newton_solver =
