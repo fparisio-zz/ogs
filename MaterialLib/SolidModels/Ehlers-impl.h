@@ -748,7 +748,7 @@ SolidEhlers<DisplacementDim>::integrateStress(
                 .template block<KelvinVectorSize, KelvinVectorSize>(0, 0);
     }
 
-    if (_damage_properties)
+    if (_damage_properties && _compute_local_damage)
         return std::make_tuple(mp.G * sigma * (1 - state.damage.value()),
                 std::unique_ptr<typename MechanicsBase<
                     DisplacementDim>::MaterialStateVariables>{
