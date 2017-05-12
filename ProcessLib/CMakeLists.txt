@@ -50,7 +50,7 @@ endif()
 
 if(Protobuf_FOUND)
 target_link_libraries(ProcessLib
-    SerializationLib)
+    PUBLIC SerializationLib)
 endif()
 
 ### Tests ###

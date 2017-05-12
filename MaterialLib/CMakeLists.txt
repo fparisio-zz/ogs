@@ -27,7 +27,7 @@ target_link_libraries(MaterialLib
 
 if(Protobuf_FOUND)
 target_link_libraries(MaterialLib
-    SerializationLib
+    PUBLIC SerializationLib
 )
 endif()
 
