@@ -215,7 +215,7 @@ public:
         NumLib::NewtonRaphsonSolverParameters nonlinear_solver_parameters,
         MaterialProperties material_properties,
         std::unique_ptr<EhlersDamageProperties>&& damage_properties,
-        bool const compute_local_damage = true)
+        bool const compute_local_damage)
         : _nonlinear_solver_parameters(std::move(nonlinear_solver_parameters)),
           _mp(std::move(material_properties)),
           _damage_properties(std::move(damage_properties)),

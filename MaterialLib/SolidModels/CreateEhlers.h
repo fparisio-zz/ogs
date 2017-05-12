@@ -194,9 +194,13 @@ std::unique_ptr<MechanicsBase<DisplacementDim>> createEhlers(
     auto const nonlinear_solver_parameters =
         createNewtonRaphsonSolverParameters(nonlinear_solver_config);
 
+    auto const compute_local_damage =
+        config.getConfigParameter<bool>("compute_local_damage");
+
     return std::unique_ptr<MechanicsBase<DisplacementDim>>{
         new SolidEhlers<DisplacementDim>{nonlinear_solver_parameters, mp,
-                                         std::move(ehlers_damage_properties)}};
+                                         std::move(ehlers_damage_properties),
+                                         compute_local_damage}};
 }
 
 }  // namespace Ehlers
