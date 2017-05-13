@@ -70,7 +70,6 @@ struct MechanicsBase
                     Eigen::Matrix<double, Eigen::Dynamic, 1> const& eps_prev,
                     Eigen::Matrix<double, Eigen::Dynamic, 1> const& eps,
                     Eigen::Matrix<double, Eigen::Dynamic, 1> const& sigma_prev,
-                    Eigen::Matrix<double, Eigen::Dynamic, 1> const& sigma,
                     MaterialStateVariables const& material_state_variables)
     {
         // TODO Avoid copies of data:
@@ -81,7 +80,6 @@ struct MechanicsBase
         KelvinVector const eps_prev_{eps_prev};
         KelvinVector const eps_{eps};
         KelvinVector const sigma_prev_{sigma_prev};
-        KelvinVector const sigma_{sigma};
 
         auto&& result = integrateStress(t,
                                         x,
@@ -89,7 +87,6 @@ struct MechanicsBase
                                         eps_prev_,
                                         eps_,
                                         sigma_prev_,
-                                        sigma_,
                                         material_state_variables);
 
         return std::move(result);
@@ -110,7 +107,6 @@ struct MechanicsBase
                     KelvinVector const& eps_prev,
                     KelvinVector const& eps,
                     KelvinVector const& sigma_prev,
-                    KelvinVector const& sigma,
                     MaterialStateVariables const& material_state_variables) = 0;
 
     virtual ~MechanicsBase() = default;

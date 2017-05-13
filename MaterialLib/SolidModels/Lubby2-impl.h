@@ -75,8 +75,7 @@ Lubby2<DisplacementDim>::integrateStress(
     double const dt,
     KelvinVector const& /*eps_prev*/,
     KelvinVector const& eps,
-    KelvinVector const& /*sigma_prev*/,
-    KelvinVector const& sigma,
+    KelvinVector const& sigma_prev,
     typename MechanicsBase<DisplacementDim>::MaterialStateVariables const&
         material_state_variables)
 {
@@ -166,7 +165,7 @@ Lubby2<DisplacementDim>::integrateStress(
         auto const success_iterations = newton_solver.solve(K_loc);
 
         if (!success_iterations)
-            return std::make_tuple(sigma, nullptr, nullptr);
+            return std::make_tuple(sigma_prev, nullptr, nullptr);
 
         // If the Newton loop didn't run, the linear solver will not be
         // initialized.
