@@ -11,9 +11,10 @@
 
 #include <cassert>
 
+#include "MaterialLib/SolidModels/CreateEhlers.h"
 #include "MaterialLib/SolidModels/CreateLinearElasticIsotropic.h"
 #include "MaterialLib/SolidModels/CreateLubby2.h"
-#include "MaterialLib/SolidModels/CreateEhlers.h"
+#include "MaterialLib/SolidModels/CreateWeibull.h"
 #include "ProcessLib/Utils/ParseSecondaryVariables.h"
 
 #include "SmallDeformationNonlocalProcess.h"
@@ -30,8 +31,7 @@ extern template class SmallDeformationNonlocalProcess<2>;
 extern template class SmallDeformationNonlocalProcess<3>;
 
 template <int DisplacementDim>
-std::unique_ptr<Process>
-createSmallDeformationNonlocalProcess(
+std::unique_ptr<Process> createSmallDeformationNonlocalProcess(
     MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<ProcessVariable> const& variables,
@@ -82,6 +82,11 @@ createSmallDeformationNonlocalProcess(
     if (type == "Ehlers")
     {
         material = MaterialLib::Solids::Ehlers::createEhlers<DisplacementDim>(
+            parameters, constitutive_relation_config);
+    }
+    else if (type == "Weibull")
+    {
+        material = MaterialLib::Solids::Weibull::createWeibull<DisplacementDim>(
             parameters, constitutive_relation_config);
     }
     else if (type == "LinearElasticIsotropic")

@@ -33,6 +33,14 @@ struct IntegrationPointData final
             eps_p_V = &msv->eps_p_V;
             eps_p_D_xx = &(msv->eps_p_D[0]);
         }
+        else if (auto const msv =
+                dynamic_cast<typename MaterialLib::Solids::Weibull::SolidWeibull<
+                    DisplacementDim>::MaterialStateVariables*>(
+                    material_state_variables.get()))
+        {
+            eps_p_V = &msv->eps_p_V;
+            eps_p_D_xx = &(msv->eps_p_D[0]);
+        }
     }
 
 #if defined(_MSC_VER) && _MSC_VER < 1900
@@ -86,6 +94,15 @@ struct IntegrationPointData final
     {
         return static_cast<
                    MaterialLib::Solids::Ehlers::SolidEhlers<DisplacementDim>&>(
+                   solid_material)
+            .updateDamage(t, x_position, kappa_d, *material_state_variables);
+    }
+
+    double updateDamageWeibull(double const t, SpatialPosition const& x_position,
+                      double const kappa_d)
+    {
+        return static_cast<
+                   MaterialLib::Solids::Weibull::SolidWeibull<DisplacementDim>&>(
                    solid_material)
             .updateDamage(t, x_position, kappa_d, *material_state_variables);
     }
