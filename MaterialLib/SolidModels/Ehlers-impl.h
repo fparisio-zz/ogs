@@ -564,14 +564,14 @@ splitSolutionVector(ResidualVector const& solution)
 template <int JacobianResidualSize, int DisplacementDim>
 boost::optional<std::tuple<
     ProcessLib::KelvinVectorType<DisplacementDim>,
-    MaterialStateVariables<DisplacementDim>,
+    StateVariables<DisplacementDim>,
     Eigen::FullPivLU<Eigen::Matrix<double, JacobianResidualSize,
                                    JacobianResidualSize, Eigen::RowMajor>>>>
 newton(double const dt, MaterialPropertiesV const& mp,
        typename SolidEhlers<DisplacementDim>::KelvinVector const& eps_D,
        double const eps_V,
        NumLib::NewtonRaphsonSolverParameters const& nonlinear_solver_parameters,
-       MaterialStateVariables<DisplacementDim> state,
+       StateVariables<DisplacementDim> state,
        PhysicalStressWithInvariants<DisplacementDim> s,
        typename SolidEhlers<DisplacementDim>::KelvinVector sigma)
 {
@@ -663,11 +663,11 @@ SolidEhlers<DisplacementDim>::integrateStress(
     typename MechanicsBase<DisplacementDim>::MaterialStateVariables const&
         material_state_variables)
 {
-    assert(dynamic_cast<MaterialStateVariables<DisplacementDim> const*>(
+    assert(dynamic_cast<StateVariables<DisplacementDim> const*>(
                &material_state_variables) != nullptr);
 
-    MaterialStateVariables<DisplacementDim> state =
-        static_cast<MaterialStateVariables<DisplacementDim> const&>(
+    StateVariables<DisplacementDim> state =
+        static_cast<StateVariables<DisplacementDim> const&>(
             material_state_variables);
     state.setInitialConditions();
 
@@ -752,14 +752,14 @@ SolidEhlers<DisplacementDim>::integrateStress(
         return std::make_tuple(mp.G * sigma * (1 - state.damage.value()),
                 std::unique_ptr<typename MechanicsBase<
                     DisplacementDim>::MaterialStateVariables>{
-                    new MaterialStateVariables<DisplacementDim>{state}},
+                    new StateVariables<DisplacementDim>{state}},
                 std::move(tangentStiffness));
 
     return std::make_tuple(
         mp.G * sigma,
         std::unique_ptr<
             typename MechanicsBase<DisplacementDim>::MaterialStateVariables>{
-            new MaterialStateVariables<DisplacementDim>{state}},
+            new StateVariables<DisplacementDim>{state}},
         std::move(tangentStiffness));
 }
 
