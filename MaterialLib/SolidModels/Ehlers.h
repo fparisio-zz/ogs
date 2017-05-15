@@ -33,7 +33,7 @@
 #include "NumLib/NewtonRaphson.h"
 
 #include "KelvinVector.h"
-#include "MechanicsBase.h"
+#include "DamageBase.h"
 
 namespace MaterialLib
 {
@@ -50,7 +50,7 @@ struct EhlersDamageProperties
 };
 
 template <int DisplacementDim>
-class SolidEhlers final : public MechanicsBase<DisplacementDim>
+class SolidEhlers final : public DamageBase<DisplacementDim>
 {
 public:
     static int const KelvinVectorSize =
@@ -242,7 +242,7 @@ public:
         double const t, ProcessLib::SpatialPosition const& x,
         double const kappa_damage,
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
-            material_state_variables);
+            material_state_variables) override;
 
 #ifdef PROTOBUF_FOUND
     OGS::MaterialState writeMaterialState(

@@ -10,14 +10,14 @@
 #pragma once
 
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <vector>
-#include <limits>
 
-#include "MaterialLib/SolidModels/LinearElasticIsotropic.h"
-#include "MaterialLib/SolidModels/Lubby2.h"
 #include "MaterialLib/SolidModels/Ehlers.h"
 #include "MaterialLib/SolidModels/Weibull.h"
+#include "MaterialLib/SolidModels/LinearElasticIsotropic.h"
+#include "MaterialLib/SolidModels/Lubby2.h"
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "NumLib/Fem/FiniteElement/TemplateIsoparametric.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
@@ -93,7 +93,9 @@ public:
 
         for (unsigned ip = 0; ip < n_integration_points; ip++)
         {
-            _ip_data.emplace_back(*_process_data.material);
+            _ip_data.emplace_back(
+                static_cast<MaterialLib::Solids::DamageBase<DisplacementDim>&>(
+                    *_process_data.material));
             auto& ip_data = _ip_data[ip];
             auto const& sm = shape_matrices[ip];
             _ip_data[ip].integration_weight =
@@ -119,7 +121,7 @@ public:
             ip_data.eps_prev.resize(
                 KelvinVectorDimensions<DisplacementDim>::value);
             ip_data.C.resize(KelvinVectorDimensions<DisplacementDim>::value,
-                              KelvinVectorDimensions<DisplacementDim>::value);
+                             KelvinVectorDimensions<DisplacementDim>::value);
 
             _secondary_data.N[ip] = shape_matrices[ip].N;
         }
@@ -140,7 +142,8 @@ public:
                       SmallDeformationNonlocalLocalAssemblerInterface>> const&
                       local_assemblers) override
     {
-        //std::cout << "\nXXX nonlocal in element " << _element.getID() << "\n";
+        // std::cout << "\nXXX nonlocal in element " << _element.getID() <<
+        // "\n";
 
         unsigned const n_integration_points =
             _integration_method.getNumberOfPoints();
@@ -155,10 +158,10 @@ public:
             //
             // Collect the integration points.
             //
-            //std::cout << "\n\tip = " << k << "\n";
+            // std::cout << "\n\tip = " << k << "\n";
 
             auto const xyz = getSingleIntegrationPointCoordinates(k);
-            //std::cout << "\tCurrent ip_k coords : " << xyz << "\n";
+            // std::cout << "\tCurrent ip_k coords : " << xyz << "\n";
 
             // For all neighbors of element
             for (auto const& la : local_assemblers)
@@ -168,17 +171,17 @@ public:
                 for (auto const& n : neighbor_ip_coords)
                 {
                     // output
-                    //std::cout << "\t[" << std::get<0>(n) << ", "
+                    // std::cout << "\t[" << std::get<0>(n) << ", "
                     //          << std::get<1>(n) << ", (";
-                    //for (int i = 0; i < std::get<2>(n).size(); ++i)
+                    // for (int i = 0; i < std::get<2>(n).size(); ++i)
                     //    std::cout << std::get<2>(n)[i] << ", ";
-                    //std::cout << "), " << std::get<3>(n) << "]\n";
+                    // std::cout << "), " << std::get<3>(n) << "]\n";
 
                     // save into current ip_k
                     _ip_data[k].non_local_assemblers.push_back(std::make_tuple(
                         la.get(), std::get<1>(n), std::get<3>(n),
                         std::numeric_limits<double>::quiet_NaN()));
-                    //std::cout << "\tadd "
+                    // std::cout << "\tadd "
                     //          << _ip_data[k].non_local_assemblers.size()
                     //          << " points.\n";
                 }
@@ -190,16 +193,16 @@ public:
             //
             for (auto& tuple : _ip_data[k].non_local_assemblers)
             {
-                //auto const& la_l =
+                // auto const& la_l =
                 //    *static_cast<SmallDeformationNonlocalLocalAssembler<
                 //        ShapeFunction, IntegrationMethod,
                 //        DisplacementDim> const* const>(std::get<0>(tuple));
 
                 double const distance2_l = std::get<2>(tuple);
 
-                //int const l_ele = la_l._element.getID();
-                //int const l = std::get<1>(tuple);
-                //std::cout << "Compute a_kl for k = " << k << " and l = ("
+                // int const l_ele = la_l._element.getID();
+                // int const l = std::get<1>(tuple);
+                // std::cout << "Compute a_kl for k = " << k << " and l = ("
                 //          << l_ele << ", " << l
                 //          << "); distance^2_l = " << distance2_l << "\n";
 
@@ -209,18 +212,18 @@ public:
                     auto const& la_m =
                         *static_cast<SmallDeformationNonlocalLocalAssembler<
                             ShapeFunction, IntegrationMethod,
-                            DisplacementDim> const* const>(std::get<0>(tuple_m));
+                            DisplacementDim> const* const>(
+                            std::get<0>(tuple_m));
 
                     int const m = std::get<1>(tuple_m);
                     double const distance2_m = std::get<2>(tuple_m);
 
-                    auto const& w_m =
-                        la_m._ip_data[m].integration_weight;
+                    auto const& w_m = la_m._ip_data[m].integration_weight;
 
                     a_k_sum_m += w_m * alpha_0(distance2_m);
 
-                    //int const m_ele = la_m._element.getID();
-                    //std::cout
+                    // int const m_ele = la_m._element.getID();
+                    // std::cout
                     //    << "\tCompute sum_a_km for k = " << k << " and m = ("
                     //    << m_ele << ", " << m
                     //    << "); distance^2_m = " << distance2_m
@@ -229,13 +232,12 @@ public:
                 }
                 double const a_kl = alpha_0(distance2_l) / a_k_sum_m;
 
-                //std::cout << "alpha_0(d^2_l) = " << alpha_0(distance2_l)
+                // std::cout << "alpha_0(d^2_l) = " << alpha_0(distance2_l)
                 //          << "\n";
-                //std::cout << "alpha_kl = " << a_kl << "done\n";
+                // std::cout << "alpha_kl = " << a_kl << "done\n";
                 std::get<3>(tuple) = a_kl;
             }
         }
-
     }
 
     Eigen::Vector3d getSingleIntegrationPointCoordinates(
@@ -243,7 +245,7 @@ public:
     {
         auto const& N = _secondary_data.N[integration_point];
 
-        Eigen::Vector3d xyz;    // Resulting coordinates
+        Eigen::Vector3d xyz;  // Resulting coordinates
         auto* nodes = _element.getNodes();
         for (int i = 0; i < N.size(); ++i)
         {
@@ -252,7 +254,7 @@ public:
             xyz += node_coordinates * N[i];
         }
 
-        //std::cout << "\t\t singleIPcoords: xyz = " << xyz[0] << " " << xyz[1]
+        // std::cout << "\t\t singleIPcoords: xyz = " << xyz[0] << " " << xyz[1]
         //          << " " << xyz[2] << "\n";
         return xyz;
     }
@@ -271,7 +273,7 @@ public:
 
         for (unsigned ip = 0; ip < n_integration_points; ip++)
         {
-            //std::cout << _element.getID() << ", " << ip << "\n";
+            // std::cout << _element.getID() << ", " << ip << "\n";
 
             auto const xyz = getSingleIntegrationPointCoordinates(ip);
             double const distance2 = (xyz - coords).squaredNorm();
@@ -279,7 +281,7 @@ public:
                 _process_data.internal_length * _process_data.internal_length)
                 result.emplace_back(_element.getID(), ip, xyz, distance2);
         }
-        //std::cout << "\tfor element " << _element.getID() << " got "
+        // std::cout << "\tfor element " << _element.getID() << " got "
         //          << result.size() << " point in internal_length\n";
         return result;
     }
@@ -290,16 +292,17 @@ public:
                   std::vector<double>& /*local_b_data*/) override
     {
         OGS_FATAL(
-            "SmallDeformationNonlocalLocalAssembler: assembly without jacobian is not "
+            "SmallDeformationNonlocalLocalAssembler: assembly without jacobian "
+            "is not "
             "implemented.");
     }
 
     void preAssemble(double const t,
                      std::vector<double> const& local_x) override
     {
-        //auto const local_matrix_size = local_x.size();
+        // auto const local_matrix_size = local_x.size();
 
-        //auto local_Jac = MathLib::createZeroedMatrix<StiffnessMatrixType>(
+        // auto local_Jac = MathLib::createZeroedMatrix<StiffnessMatrixType>(
         //    local_Jac_data, local_matrix_size, local_matrix_size);
 
         unsigned const n_integration_points =
@@ -364,13 +367,13 @@ public:
             auto const& w = _ip_data[ip].integration_weight;
 
             auto const& B = _ip_data[ip].b_matrices;
-            //auto const& eps_prev = _ip_data[ip].eps_prev;
-            //auto const& sigma_prev = _ip_data[ip].sigma_prev;
+            // auto const& eps_prev = _ip_data[ip].eps_prev;
+            // auto const& sigma_prev = _ip_data[ip].sigma_prev;
 
             auto& eps = _ip_data[ip].eps;
             auto& sigma = _ip_data[ip].sigma;
             auto& C = _ip_data[ip].C;
-            //auto& material_state_variables =
+            // auto& material_state_variables =
             //    *_ip_data[ip].material_state_variables;
 
             eps.noalias() =
@@ -404,7 +407,7 @@ public:
                             DisplacementDim> const* const>(std::get<0>(tuple))
                             ->_ip_data[l]
                             .getLocalVariable();
-                    //std::cerr << kappa_d << "\n";
+                    // std::cerr << kappa_d << "\n";
                     double const a_kl = std::get<3>(tuple);
 
                     auto const& w_l = la_l._ip_data[l].integration_weight;
@@ -484,8 +487,7 @@ public:
         auto small_deformation_nonlocal =
             element_data.mutable_small_deformation_nonlocal();
         auto common = small_deformation_nonlocal->mutable_common();
-        common->CopyFrom(
-            getSmallDeformationCommonIntegrationPointData(*this));
+        common->CopyFrom(getSmallDeformationCommonIntegrationPointData(*this));
 
         {  // SmallDeformationNonlocal specific output.
             unsigned const n_integration_points =
@@ -505,11 +507,10 @@ public:
     };
 #else
     std::size_t writeIntegrationPointData(std::vector<char>& data) override
-	{
-	return 0;
-	}
+    {
+        return 0;
+    }
 #endif
-
 
     Eigen::Map<const Eigen::RowVectorXd> getShapeMatrix(
         const unsigned integration_point) const override

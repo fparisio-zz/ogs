@@ -20,7 +20,7 @@ template <typename BMatricesType, int DisplacementDim>
 struct IntegrationPointData final
 {
     explicit IntegrationPointData(
-        MaterialLib::Solids::MechanicsBase<DisplacementDim>& solid_material)
+        MaterialLib::Solids::DamageBase<DisplacementDim>& solid_material)
         : solid_material(solid_material),
           material_state_variables(
               solid_material.createMaterialStateVariables())
@@ -66,7 +66,7 @@ struct IntegrationPointData final
     double damage = 0;
     double nonlocal_kappa_d = 0;
 
-    MaterialLib::Solids::MechanicsBase<DisplacementDim>& solid_material;
+    MaterialLib::Solids::DamageBase<DisplacementDim>& solid_material;
     std::unique_ptr<typename MaterialLib::Solids::MechanicsBase<
         DisplacementDim>::MaterialStateVariables>
         material_state_variables;
@@ -92,19 +92,7 @@ struct IntegrationPointData final
     double updateDamage(double const t, SpatialPosition const& x_position,
                       double const kappa_d)
     {
-        return static_cast<
-                   MaterialLib::Solids::Ehlers::SolidEhlers<DisplacementDim>&>(
-                   solid_material)
-            .updateDamage(t, x_position, kappa_d, *material_state_variables);
-    }
-
-    double updateDamageWeibull(double const t, SpatialPosition const& x_position,
-                      double const kappa_d)
-    {
-        return static_cast<
-                   MaterialLib::Solids::Weibull::SolidWeibull<DisplacementDim>&>(
-                   solid_material)
-            .updateDamage(t, x_position, kappa_d, *material_state_variables);
+            solid_material.updateDamage(t, x_position, kappa_d, *material_state_variables);
     }
 
     std::vector<std::tuple<

@@ -31,7 +31,7 @@
 #include "NumLib/NewtonRaphson.h"
 
 #include "KelvinVector.h"
-#include "MechanicsBase.h"
+#include "DamageBase.h"
 
 namespace MaterialLib
 {
@@ -48,7 +48,7 @@ struct WeibullDamageProperties
 };
 
 template <int DisplacementDim>
-class SolidWeibull final : public MechanicsBase<DisplacementDim>
+class SolidWeibull final : public DamageBase<DisplacementDim>
 {
 public:
     static int const KelvinVectorSize =
@@ -189,7 +189,7 @@ public:
         double const t, ProcessLib::SpatialPosition const& x,
         double const kappa_damage,
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
-            material_state_variables);
+            material_state_variables) override;
 
 #ifdef PROTOBUF_FOUND
     OGS::MaterialState writeMaterialState(

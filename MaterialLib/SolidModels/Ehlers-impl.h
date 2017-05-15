@@ -594,80 +594,6 @@ void SolidEhlers<DisplacementDim>::calculateLocalKappaD(
         _state.kappa_d += eps_p_V_dot / x_s;
     }
 
-    // Compute elastic-damage simple model
-    // compute norm in principal strain space
-    double pure_damage_model = 1;
-    if (pure_damage_model == 1)
-    {
-        double const h_d = _damage_properties->h_d(t, x)[0];
-        double const alpha_d = _damage_properties->alpha_d(t, x)[0];
-        double const beta_d = _damage_properties->beta_d(t, x)[0];
-        double const G = _mp.G(t, x)[0];
-
-        Eigen::Matrix<double, DisplacementDim, DisplacementDim> strain_mat =
-            Eigen::Matrix<double, DisplacementDim, DisplacementDim>::Zero();
-
-        for (int i = 0; i < DisplacementDim; ++i)
-            for (int j = 0; j < DisplacementDim; ++j)
-            {
-                if (i == j)
-                {
-                    strain_mat(i, j) = G * (eps(i));
-                }
-                else
-                {
-                    strain_mat(i, j) = G * (eps(i + j + 2));
-                };
-            };
-
-        Eigen::EigenSolver<decltype(strain_mat)> eigen_solver(strain_mat);
-        auto const& principal_strain = eigen_solver.eigenvalues();
-        // building kappa_d (damage driving variable)
-        double prod_strain = 0.;
-        for (int i = 0; i < DisplacementDim; ++i)
-        {
-            Eigen::Matrix<double, DisplacementDim, 1> eig_val_strain;
-            eig_val_strain(i, 0) = real(principal_strain(i, 0));
-            prod_strain =
-                prod_strain + eig_val_strain(i, 0) * eig_val_strain(i, 0);
-        }
-
-        Eigen::Matrix<double, DisplacementDim, DisplacementDim> d_strain_mat =
-            Eigen::Matrix<double, DisplacementDim, DisplacementDim>::Zero();
-
-        for (int i = 0; i < DisplacementDim; ++i)
-            for (int j = 0; j < DisplacementDim; ++j)
-            {
-                if (i == j)
-                {
-                    d_strain_mat(i, j) = G * (eps(i) - eps_prev(i));
-                }
-                else
-                {
-                    d_strain_mat(i, j) =
-                        G * (eps(i + j + 2) - eps_prev(i + j + 2));
-                };
-            };
-
-        Eigen::EigenSolver<decltype(strain_mat)> eigen_solver_2(d_strain_mat);
-        auto const& d_principal_strain = eigen_solver_2.eigenvalues();
-        // building kappa_d (damage driving variable)
-        double d_prod_strain = 0;
-        for (int i = 0; i < DisplacementDim; ++i)
-        {
-            Eigen::Matrix<double, DisplacementDim, 1> d_eig_val_strain;
-            d_eig_val_strain(i, 0) = real(d_principal_strain(i, 0));
-            d_prod_strain =
-                d_prod_strain + d_eig_val_strain(i, 0) * d_eig_val_strain(i, 0);
-        }
-
-        double strain_norm_0 =
-            alpha_d *
-            std::pow(std::log(1. / (1. - _state.damage / (0.99))), 1. / beta_d);
-        if ((std::sqrt(prod_strain) - strain_norm_0) >= 0)
-            if (std::sqrt(d_prod_strain) > 0)
-                _state.kappa_d += std::sqrt(d_prod_strain);
-    }
     assert(_state.kappa_d >= 0.);
 }
 
@@ -687,12 +613,8 @@ double SolidEhlers<DisplacementDim>::updateDamage(
     double const beta_d = _damage_properties->beta_d(t, x)[0];
 
     // Update internal damage variable.
-    int pure_damage = 1;
-    if (pure_damage == 1)
-        _state.damage =
-            0.99 * (1 - std::exp(-std::pow(kappa_damage / alpha_d, beta_d)));
-    else
-        _state.damage = (1 - beta_d) * (1 - std::exp(-kappa_damage / alpha_d));
+
+    _state.damage = (1 - beta_d) * (1 - std::exp(-kappa_damage / alpha_d));
 
     return _state.damage;
 }
@@ -906,102 +828,6 @@ bool SolidEhlers<DisplacementDim>::computeConstitutiveRelation(
             _mp.G(t, x)[0] *
             linear_solver.solve(-dresidual_deps)
                 .template block<KelvinVectorSize, KelvinVectorSize>(0, 0);
-    }
-
-    if (_damage_properties)
-    {
-        calculateLocalKappaD(t, x, dt, sigma, eps, eps_prev, _state);
-
-        if (_compute_local_damage)  // The non-local damage update is called
-                                    // from the FEM.
-            updateDamage(t, x, _state.kappa_d, material_state_variables);
-
-        // Compute damage update of consistent tangent matrix
-        // compute principal strains etc.
-        Eigen::Matrix<double, DisplacementDim, DisplacementDim> strain_mat =
-            Eigen::Matrix<double, DisplacementDim, DisplacementDim>::Zero();
-
-        for (int i = 0; i < DisplacementDim; ++i)
-            for (int j = 0; j < DisplacementDim; ++j)
-            {
-                if (i == j)
-                {
-                    strain_mat(i, j) = G * (eps(i));
-                }
-                else
-                {
-                    strain_mat(i, j) = G * (eps(i + j + 2));
-                };
-            };
-
-        Eigen::EigenSolver<decltype(strain_mat)> eigen_solver(strain_mat);
-        auto const& principal_strain = eigen_solver.eigenvalues();
-        // building kappa_d (damage driving variable)
-        double prod_strain = 0.;
-        for (int i = 0; i < DisplacementDim; ++i)
-        {
-            Eigen::Matrix<double, DisplacementDim, 1> eig_val_strain;
-            eig_val_strain(i, 0) = real(principal_strain(i, 0));
-            prod_strain =
-                prod_strain + eig_val_strain(i, 0) * eig_val_strain(i, 0);
-        }
-
-        Eigen::Matrix<double, DisplacementDim, DisplacementDim> d_strain_mat =
-            Eigen::Matrix<double, DisplacementDim, DisplacementDim>::Zero();
-
-        for (int i = 0; i < DisplacementDim; ++i)
-            for (int j = 0; j < DisplacementDim; ++j)
-            {
-                if (i == j)
-                {
-                    d_strain_mat(i, j) = G * (eps(i) - eps_prev(i));
-                }
-                else
-                {
-                    d_strain_mat(i, j) =
-                        G * (eps(i + j + 2) - eps_prev(i + j + 2));
-                };
-            };
-
-        Eigen::EigenSolver<decltype(strain_mat)> eigen_solver_3(d_strain_mat);
-        auto const& d_principal_strain = eigen_solver_3.eigenvalues();
-        // building kappa_d (damage driving variable)
-        double d_prod_strain = 0.;
-        for (int i = 0; i < DisplacementDim; ++i)
-        {
-            Eigen::Matrix<double, DisplacementDim, 1> d_eig_val_strain;
-            d_eig_val_strain(i, 0) = real(d_principal_strain(i, 0));
-            d_prod_strain =
-                d_prod_strain + d_eig_val_strain(i, 0) * d_eig_val_strain(i, 0);
-        }
-
-        double const alpha_d = _damage_properties->alpha_d(t, x)[0];
-        double const beta_d = _damage_properties->beta_d(t, x)[0];
-        double g_prime = 0;
-        KelvinVector eta_dam = eps;
-
-        if (_state.kappa_d > 0)
-        {
-            g_prime = 0.99 * beta_d *
-                      std::exp(-std::pow(_state.kappa_d / alpha_d, beta_d)) *
-                      std::pow(_state.kappa_d / alpha_d, beta_d) /
-                      _state.kappa_d;
-            eta_dam = eta_dam / std::sqrt(prod_strain);
-        }
-        else
-        {
-            g_prime = 0;
-        }
-
-        Eigen::Matrix<double, KelvinVectorSize, KelvinVectorSize,
-                      Eigen::RowMajor>
-            dam_matrix =
-                g_prime * (1 - _state.damage) * sigma * eta_dam.transpose();
-
-        C.setZero();
-        C.template topLeftCorner<3, 3>().setConstant(K - 2. / 3 * G);
-        C.noalias() +=
-            (1 - _state.damage) * 2 * G * KelvinMatrix::Identity() - dam_matrix;
     }
 
     // Update sigma.
