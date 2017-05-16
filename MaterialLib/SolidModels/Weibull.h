@@ -30,8 +30,8 @@
 #include "BaseLib/Error.h"
 #include "NumLib/NewtonRaphson.h"
 
-#include "KelvinVector.h"
 #include "DamageBase.h"
+#include "KelvinVector.h"
 
 namespace MaterialLib
 {
@@ -226,6 +226,10 @@ private:
         KelvinVector const& eps,
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
             material_state_variables);
+
+    enum class normType { negative, positive, total};
+
+    double vectorNorm(KelvinVector const& eps, normType const flag);
 
 private:
     NumLib::NewtonRaphsonSolverParameters const _nonlinear_solver_parameters;
