@@ -92,7 +92,7 @@ struct IntegrationPointData final
     double updateDamage(double const t, SpatialPosition const& x_position,
                       double const kappa_d)
     {
-            solid_material.updateDamage(t, x_position, kappa_d, *material_state_variables);
+            return solid_material.updateDamage(t, x_position, kappa_d, *material_state_variables);
     }
 
     std::vector<std::tuple<
