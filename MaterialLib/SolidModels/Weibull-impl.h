@@ -114,6 +114,7 @@ double SolidWeibull<DisplacementDim>::vectorNorm(KelvinVector const& eps,
                         prod_strain_tens +
                         eig_val_strain(i, 0) * eig_val_strain(i, 0);
             }
+            return std::sqrt(prod_strain_tens);
             break;
 
         case normType::negative:
@@ -126,6 +127,7 @@ double SolidWeibull<DisplacementDim>::vectorNorm(KelvinVector const& eps,
                         prod_strain_tens +
                         eig_val_strain(i, 0) * eig_val_strain(i, 0);
             }
+            return std::sqrt(prod_strain_tens);
             break;
 
         case normType::total:
@@ -136,9 +138,9 @@ double SolidWeibull<DisplacementDim>::vectorNorm(KelvinVector const& eps,
                 prod_strain_tens = prod_strain_tens +
                                    eig_val_strain(i, 0) * eig_val_strain(i, 0);
             }
+            return std::sqrt(prod_strain_tens);
             break;
     }
-    return std::sqrt(prod_strain_tens);
 };
 
 template <int DisplacementDim>
@@ -170,12 +172,16 @@ void SolidWeibull<DisplacementDim>::calculateLocalKappaD(
     double const G = _mp.G(t, x)[0];
 
     double prod_strain_tens = vectorNorm(eps, normType::positive);
-    double d_prod_strain_tens = vectorNorm(eps-eps_prev, normType::positive);
+    double d_prod_strain_tens = vectorNorm(eps - eps_prev, normType::positive);
     double prod_strain_comp = vectorNorm(eps, normType::negative);
-    double d_prod_strain_comp = vectorNorm(eps-eps_prev, normType::negative);
+    double d_prod_strain_comp = vectorNorm(eps - eps_prev, normType::negative);
 
     std::cout << "tensile\n" << prod_strain_tens << std::endl;
     std::cout << "compressive\n" << prod_strain_comp << std::endl;
+    std::cout << "check\n"
+              << prod_strain_comp + prod_strain_tens -
+                     vectorNorm(eps, normType::total)
+              << std::endl;
 
     std::cout << "tensile rate\n" << d_prod_strain_tens << std::endl;
     std::cout << "compressive rate\n" << d_prod_strain_comp << std::endl;
