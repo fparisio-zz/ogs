@@ -100,9 +100,9 @@ void SolidWeibull<DisplacementDim>::calculateLocalKappaD(
     // Compute elastic-damage simple model
     // compute norm in principal strain space
 
-    double const h_d = _damage_properties->h_d(t, x)[0];
+    double const r_d = _damage_properties->r_d(t, x)[0];
     double const alpha_d = _damage_properties->alpha_d(t, x)[0];
-    double const beta_d = _damage_properties->beta_d(t, x)[0];
+    double const m_w = _damage_properties->m_w(t, x)[0];
     double const G = _mp.G(t, x)[0];
 
     Eigen::Matrix<double, DisplacementDim, DisplacementDim> strain_mat =
@@ -124,12 +124,18 @@ void SolidWeibull<DisplacementDim>::calculateLocalKappaD(
     Eigen::EigenSolver<decltype(strain_mat)> eigen_solver(strain_mat);
     auto const& principal_strain = eigen_solver.eigenvalues();
     // building kappa_d (damage driving variable)
-    double prod_strain = 0.;
+    double prod_strain_tens = 0.;
+    double prod_strain_comp = 0.;
     for (int i = 0; i < DisplacementDim; ++i)
     {
         Eigen::Matrix<double, DisplacementDim, 1> eig_val_strain;
         eig_val_strain(i, 0) = real(principal_strain(i, 0));
-        prod_strain = prod_strain + eig_val_strain(i, 0) * eig_val_strain(i, 0);
+        if (eig_val_strain(i, 0) > 0)
+            prod_strain_tens =
+                prod_strain_tens + eig_val_strain(i, 0) * eig_val_strain(i, 0);
+        else
+            prod_strain_comp =
+                prod_strain_comp + eig_val_strain(i, 0) * eig_val_strain(i, 0);
     }
 
     Eigen::Matrix<double, DisplacementDim, DisplacementDim> d_strain_mat =
@@ -151,21 +157,30 @@ void SolidWeibull<DisplacementDim>::calculateLocalKappaD(
     Eigen::EigenSolver<decltype(strain_mat)> eigen_solver_2(d_strain_mat);
     auto const& d_principal_strain = eigen_solver_2.eigenvalues();
     // building kappa_d (damage driving variable)
-    double d_prod_strain = 0;
+    double d_prod_strain_tens = 0.;
+    double d_prod_strain_comp = 0.;
     for (int i = 0; i < DisplacementDim; ++i)
     {
         Eigen::Matrix<double, DisplacementDim, 1> d_eig_val_strain;
         d_eig_val_strain(i, 0) = real(d_principal_strain(i, 0));
-        d_prod_strain =
-            d_prod_strain + d_eig_val_strain(i, 0) * d_eig_val_strain(i, 0);
+        if (d_eig_val_strain(i, 0) > 0)
+            d_prod_strain_tens =
+                d_prod_strain_tens +
+                d_eig_val_strain(i, 0) * d_eig_val_strain(i, 0);
+        else
+            d_prod_strain_comp =
+                d_prod_strain_comp +
+                d_eig_val_strain(i, 0) * d_eig_val_strain(i, 0);
     }
 
     double strain_norm_0 =
         alpha_d *
-        std::pow(std::log(1. / (1. - _state.damage / (0.99))), 1. / beta_d);
-    if ((std::sqrt(prod_strain) - strain_norm_0) >= 0)
-        if (std::sqrt(d_prod_strain) > 0)
-            _state.kappa_d += std::sqrt(d_prod_strain);
+        std::pow(std::log(1. / (1. - _state.damage / (0.99))), 1. / m_w);
+    if ((std::sqrt(prod_strain_tens + r_d * prod_strain_comp) -
+         strain_norm_0) >= 0)
+        if (std::sqrt(d_prod_strain_tens + r_d * d_prod_strain_comp) > 0)
+            _state.kappa_d +=
+                std::sqrt(d_prod_strain_tens + r_d * d_prod_strain_comp);
 
     assert(_state.kappa_d >= 0.);
 }
@@ -183,11 +198,11 @@ double SolidWeibull<DisplacementDim>::updateDamage(
         static_cast<MaterialStateVariables&>(material_state_variables);
 
     double const alpha_d = _damage_properties->alpha_d(t, x)[0];
-    double const beta_d = _damage_properties->beta_d(t, x)[0];
+    double const m_w = _damage_properties->m_w(t, x)[0];
 
     // Update internal damage variable.
     _state.damage =
-        0.99 * (1 - std::exp(-std::pow(kappa_damage / alpha_d, beta_d)));
+        0.99 * (1 - std::exp(-std::pow(kappa_damage / alpha_d, m_w)));
 
     return _state.damage;
 }
@@ -295,14 +310,20 @@ bool SolidWeibull<DisplacementDim>::computeConstitutiveRelation(
 
         Eigen::EigenSolver<decltype(strain_mat)> eigen_solver(strain_mat);
         auto const& principal_strain = eigen_solver.eigenvalues();
+
         // building kappa_d (damage driving variable)
-        double prod_strain = 0.;
+        double prod_strain_tens = 0.;
+        double prod_strain_comp = 0.;
         for (int i = 0; i < DisplacementDim; ++i)
         {
             Eigen::Matrix<double, DisplacementDim, 1> eig_val_strain;
             eig_val_strain(i, 0) = real(principal_strain(i, 0));
-            prod_strain =
-                prod_strain + eig_val_strain(i, 0) * eig_val_strain(i, 0);
+            if (eig_val_strain(i, 0) > 0)
+                prod_strain_tens = prod_strain_tens +
+                                   eig_val_strain(i, 0) * eig_val_strain(i, 0);
+            else
+                prod_strain_comp = prod_strain_comp +
+                                   eig_val_strain(i, 0) * eig_val_strain(i, 0);
         }
 
         Eigen::Matrix<double, DisplacementDim, DisplacementDim> d_strain_mat =
@@ -325,27 +346,35 @@ bool SolidWeibull<DisplacementDim>::computeConstitutiveRelation(
         Eigen::EigenSolver<decltype(strain_mat)> eigen_solver_3(d_strain_mat);
         auto const& d_principal_strain = eigen_solver_3.eigenvalues();
         // building kappa_d (damage driving variable)
-        double d_prod_strain = 0.;
+        double d_prod_strain_tens = 0.;
+        double d_prod_strain_comp = 0.;
         for (int i = 0; i < DisplacementDim; ++i)
         {
             Eigen::Matrix<double, DisplacementDim, 1> d_eig_val_strain;
             d_eig_val_strain(i, 0) = real(d_principal_strain(i, 0));
-            d_prod_strain =
-                d_prod_strain + d_eig_val_strain(i, 0) * d_eig_val_strain(i, 0);
+            if (d_eig_val_strain(i, 0) > 0)
+                d_prod_strain_tens =
+                    d_prod_strain_tens +
+                    d_eig_val_strain(i, 0) * d_eig_val_strain(i, 0);
+            else
+                d_prod_strain_comp =
+                    d_prod_strain_comp +
+                    d_eig_val_strain(i, 0) * d_eig_val_strain(i, 0);
         }
 
+        double const r_d = _damage_properties->r_d(t, x)[0];
         double const alpha_d = _damage_properties->alpha_d(t, x)[0];
-        double const beta_d = _damage_properties->beta_d(t, x)[0];
+        double const m_w = _damage_properties->m_w(t, x)[0];
         double g_prime = 0;
         KelvinVector eta_dam = eps;
 
         if (_state.kappa_d > 0)
         {
-            g_prime = 0.99 * beta_d *
-                      std::exp(-std::pow(_state.kappa_d / alpha_d, beta_d)) *
-                      std::pow(_state.kappa_d / alpha_d, beta_d) /
-                      _state.kappa_d;
-            eta_dam = eta_dam / std::sqrt(prod_strain);
+            g_prime = 0.99 * m_w *
+                      std::exp(-std::pow(_state.kappa_d / alpha_d, m_w)) *
+                      std::pow(_state.kappa_d / alpha_d, m_w) / _state.kappa_d;
+            eta_dam =
+                eta_dam / std::sqrt(prod_strain_tens + r_d * prod_strain_comp);
         }
         else
         {
