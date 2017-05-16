@@ -43,8 +43,8 @@ struct WeibullDamageProperties
 {
     using P = ProcessLib::Parameter<double>;
     P const& alpha_d;
-    P const& beta_d;
-    P const& h_d;
+    P const& m_w;
+    P const& r_d;
 };
 
 template <int DisplacementDim>
