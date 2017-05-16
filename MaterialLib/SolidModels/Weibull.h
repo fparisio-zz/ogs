@@ -227,9 +227,15 @@ private:
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables&
             material_state_variables);
 
-    enum class normType { negative, positive, total};
+    enum class normType
+    {
+        negative,
+        positive,
+        total
+    };
 
-    double vectorNorm(KelvinVector const& eps, normType const flag);
+    double vectorNorm(KelvinVector const& eps, normType const flag,
+                      double const& k_bulk);
 
 private:
     NumLib::NewtonRaphsonSolverParameters const _nonlinear_solver_parameters;
