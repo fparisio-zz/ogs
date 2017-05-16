@@ -100,6 +100,67 @@ struct DamageProperties
     P const& h_d;
 };
 
+/// Evaluated MaterialProperties container.
+struct MaterialPropertiesV final
+{
+    MaterialPropertiesV(double const t, ProcessLib::SpatialPosition const& x,
+                        MaterialProperties const& mp)
+        : G(mp.G(t, x)[0]),
+          K(mp.K(t, x)[0]),
+          alpha(mp.alpha(t, x)[0]),
+          beta(mp.beta(t, x)[0]),
+          gamma(mp.gamma(t, x)[0]),
+          delta(mp.delta(t, x)[0]),
+          epsilon(mp.epsilon(t, x)[0]),
+          m(mp.m(t, x)[0]),
+          alpha_p(mp.alpha_p(t, x)[0]),
+          beta_p(mp.beta_p(t, x)[0]),
+          gamma_p(mp.gamma_p(t, x)[0]),
+          delta_p(mp.delta_p(t, x)[0]),
+          epsilon_p(mp.epsilon_p(t, x)[0]),
+          m_p(mp.m_p(t, x)[0]),
+          kappa(mp.kappa(t, x)[0]),
+          hardening_coefficient(mp.hardening_coefficient(t, x)[0])
+    {
+    }
+    // basic material parameters
+    double const G;  ///< shear modulus
+    double const K;  ///< bulk modulus
+
+    double const alpha;
+    double const beta;
+    double const gamma;
+    double const delta;
+    double const epsilon;
+    double const m;
+
+    double const alpha_p;
+    double const beta_p;
+    double const gamma_p;
+    double const delta_p;
+    double const epsilon_p;
+    double const m_p;
+
+    double const kappa;
+    double const hardening_coefficient;
+};
+
+/// Evaluated DamageProperties container.
+struct DamagePropertiesV
+{
+    DamagePropertiesV(double const t,
+                      ProcessLib::SpatialPosition const& x,
+                      DamageProperties const& dp)
+        : alpha_d(dp.alpha_d(t, x)[0]),
+          beta_d(dp.beta_d(t, x)[0]),
+          h_d(dp.h_d(t, x)[0])
+    {
+    }
+    double const alpha_d;
+    double const beta_d;
+    double const h_d;
+};
+
 template <typename KelvinVector>
 struct PlasticStrain final
 {
