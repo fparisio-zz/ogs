@@ -300,6 +300,12 @@ public:
         typename MechanicsBase<DisplacementDim>::MaterialStateVariables const&
             material_state_variables) override;
 
+    MaterialPropertiesV evaluatedMaterialProperties(
+        double const t, ProcessLib::SpatialPosition const& x) const
+    {
+        return MaterialPropertiesV(t, x, _mp);
+    }
+
     DamagePropertiesV evaluatedDamageProperties(
         double const t, ProcessLib::SpatialPosition const& x) const
     {
