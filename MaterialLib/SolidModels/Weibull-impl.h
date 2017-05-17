@@ -99,7 +99,7 @@ double SolidWeibull<DisplacementDim>::vectorNorm(KelvinVector const& eps,
         };
 
     Eigen::EigenSolver<decltype(strain_mat)> eigen_solver(strain_mat);
-    auto const& principal_strain = k_bulk * eigen_solver.eigenvalues();
+    auto const& principal_strain = eigen_solver.eigenvalues();
     // building kappa_d (damage driving variable)
     double prod_strain = 0.;
 
@@ -161,16 +161,13 @@ void SolidWeibull<DisplacementDim>::calculateLocalKappaD(
     // compute norm in principal strain space
 
     double const r_d = _damage_properties->r_d(t, x)[0];
+    double const alpha_d = _damage_properties->alpha_d(t, x)[0];
+    double const m_w = _damage_properties->m_w(t, x)[0];
+
     double const K = _mp.K(t, x)[0];
 
-    double prod_strain_tens = vectorNorm(eps, normType::positive, K);
-    double prod_strain_tens_prev = vectorNorm(eps_prev, normType::positive, K);
-    double prod_strain_comp = vectorNorm(eps, normType::negative, K);
-    double prod_strain_comp_prev = vectorNorm(eps_prev, normType::negative, K);
-
-    double norm_strain = std::sqrt(prod_strain_tens + r_d * prod_strain_comp);
-    double norm_strain_prev =
-        std::sqrt(prod_strain_tens_prev + r_d * prod_strain_comp_prev);
+    double prod_strain_tot = vectorNorm(eps, normType::total, K);
+    double d_prod_strain_tot = vectorNorm(eps - eps_prev, normType::total, K);
 
     // std::cout << "tensile\n" << prod_strain_tens << std::endl;
     // std::cout << "compressive\n" << prod_strain_comp << std::endl;
@@ -181,9 +178,12 @@ void SolidWeibull<DisplacementDim>::calculateLocalKappaD(
 
     // std::cout << "tensile rate\n" << d_prod_strain_tens << std::endl;
     // std::cout << "compressive rate\n" << d_prod_strain_comp << std::endl;
+    double strain_norm_0 =
+        alpha_d *
+        std::pow(std::log(1. / (1. - _state.damage / ((1. - 1e-3)))), 1. / m_w);
 
-    if (norm_strain - norm_strain_prev >= 0)
-        _state.kappa_d += norm_strain - norm_strain_prev;
+    if (std::sqrt(prod_strain_tot) - strain_norm_0 >= 0)
+        _state.kappa_d += std::sqrt(d_prod_strain_tot);
 
     assert(_state.kappa_d >= 0.);
 }
