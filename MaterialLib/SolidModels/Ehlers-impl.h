@@ -659,10 +659,11 @@ SolidEhlers<DisplacementDim>::integrateStress(
     PhysicalStressWithInvariants<DisplacementDim> s{mp.G * sigma};
     // Quit early if sigma is zero (nothing to do) or if we are still in elastic
     // zone.
-    if (sigma.squaredNorm() == 0 ||
-        yieldFunction(mp, s, calculateIsotropicHardening(
-                                 mp.kappa, mp.hardening_coefficient,
-                                 state.eps_p.eff)) < 0)
+    if ((sigma.squaredNorm() == 0 ||
+         yieldFunction(mp, s, calculateIsotropicHardening(
+                                  mp.kappa, mp.hardening_coefficient,
+                                  state.eps_p.eff)) < 0) ||
+        (_damage_properties && state.damage_prev.value() > 0.99))
     {
         tangentStiffness.setZero();
         tangentStiffness.template topLeftCorner<3, 3>().setConstant(
@@ -721,7 +722,8 @@ SolidEhlers<DisplacementDim>::integrateStress(
                     k_hardening, mp);
                 //std::cout << "residual:\n" << residual << "\n";
             };
-            
+
+            double const damping = 1.;
             auto const update_solution =
                 [&](ResidualVectorType const& increment) {
                     //std::cout << "increment:\n" << increment << "\n";
