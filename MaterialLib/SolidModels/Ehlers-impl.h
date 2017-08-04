@@ -68,6 +68,15 @@ struct PhysicalStressWithInvariants final
     {
     }
 
+    PhysicalStressWithInvariants(PhysicalStressWithInvariants const&) = default;
+    PhysicalStressWithInvariants& operator=(
+        PhysicalStressWithInvariants const&) = default;
+#if defined(_MSC_VER) && (_MSC_VER >= 1900)
+    PhysicalStressWithInvariants(PhysicalStressWithInvariants&&) = default;
+    PhysicalStressWithInvariants& operator=(PhysicalStressWithInvariants&&) =
+        default;
+#endif  // _MSC_VER
+
     KelvinVector value;
     KelvinVector D;
     double I_1;
@@ -231,10 +240,23 @@ typename SolidEhlers<DisplacementDim>::JacobianMatrix calculatePlasticJacobian(
     KelvinVector const dtheta_dsigma =
         theta * sigma_D_inverse_D - 3. / 2. * theta / s.J_2 * s.D;
 
+    double tol_j2 = 1e-8;
+    double sqrtPhi = 0;
+
     // deviatoric flow
-    double const sqrtPhi = std::sqrt(
-        s.J_2 * one_gt.pow_m_p + mp.alpha_p / 2. * boost::math::pow<2>(s.I_1) +
-        boost::math::pow<2>(mp.delta_p) * boost::math::pow<4>(s.I_1));
+    if (s.J_2 < tol_j2)
+    {
+        sqrtPhi = std::sqrt(
+            mp.alpha_p / 2. * boost::math::pow<2>(s.I_1) +
+            boost::math::pow<2>(mp.delta_p) * boost::math::pow<4>(s.I_1));
+    }
+    else
+    {
+        sqrtPhi = std::sqrt(
+            s.J_2 * one_gt.pow_m_p + mp.alpha_p / 2. * boost::math::pow<2>(s.I_1) +
+            boost::math::pow<2>(mp.delta_p) * boost::math::pow<4>(s.I_1));        
+    }
+    
     KelvinVector const flow_D = plasticFlowDeviatoricPart(
         s, one_gt, sqrtPhi, dtheta_dsigma, mp.gamma_p, mp.m_p);
     KelvinVector const lambda_flow_D = lambda * flow_D;
@@ -263,11 +285,23 @@ typename SolidEhlers<DisplacementDim>::JacobianMatrix calculatePlasticJacobian(
     // intermediate variable for derivative of deviatoric flow
     KelvinVector const M0 = s.J_2 / one_gt.value * dtheta_dsigma;
     // derivative of Phi w.r.t. sigma
-    KelvinVector const dPhi_dsigma =
+    KelvinVector dPhi_dsigma;
+
+    if (s.J_2 < tol_j2)
+    {
+    dPhi_dsigma =
+        (mp.alpha_p * s.I_1 +
+         4 * boost::math::pow<2>(mp.delta_p) * boost::math::pow<3>(s.I_1)) *
+            identity2;        
+    }
+    else
+    {
+    dPhi_dsigma =
         one_gt.pow_m_p * (s.D + gm_p * M0) +
         (mp.alpha_p * s.I_1 +
          4 * boost::math::pow<2>(mp.delta_p) * boost::math::pow<3>(s.I_1)) *
             identity2;
+    }
 
     // intermediate variable for derivative of deviatoric flow
     KelvinMatrix const M1 =
@@ -294,9 +328,18 @@ typename SolidEhlers<DisplacementDim>::JacobianMatrix calculatePlasticJacobian(
     KelvinMatrix const dflow_D_dsigma =
         (-M1 / (4 * boost::math::pow<3>(sqrtPhi)) + (M2 + M3) / (2 * sqrtPhi)) *
         mp.G;
-    jacobian
-        .template block<KelvinVectorSize, KelvinVectorSize>(KelvinVectorSize, 0)
-        .noalias() = -lambda * dflow_D_dsigma;
+
+    if (s.J_2 < tol_j2)
+        {
+            jacobian
+                .template block<KelvinVectorSize, KelvinVectorSize>(KelvinVectorSize, 0)
+                .noalias() = -lambda * dflow_D_dsigma * 0.;
+        }
+    else    
+        {   jacobian
+                .template block<KelvinVectorSize, KelvinVectorSize>(KelvinVectorSize, 0)
+                .noalias() = -lambda * dflow_D_dsigma;
+        }
 
     // G_22
     jacobian
@@ -307,15 +350,23 @@ typename SolidEhlers<DisplacementDim>::JacobianMatrix calculatePlasticJacobian(
     // G_23 and G_24 are zero
 
     // G_25
-    jacobian
+    if (s.J_2 < tol_j2)
+        {    jacobian
+        .template block<KelvinVectorSize, 1>(KelvinVectorSize,
+                                             2 * KelvinVectorSize + 2)
+        .noalias() = -flow_D * 0;
+        }
+    else
+        {    jacobian
         .template block<KelvinVectorSize, 1>(KelvinVectorSize,
                                              2 * KelvinVectorSize + 2)
         .noalias() = -flow_D;
+        }
 
     // G_31
     {
         // derivative of flow_V w.r.t. sigma
-        KelvinVector const dflow_V_dsigma =
+            KelvinVector const dflow_V_dsigma =
             3 * mp.G *
             (-(mp.alpha_p * s.I_1 +
                4 * boost::math::pow<2>(mp.delta_p) *
@@ -348,7 +399,7 @@ typename SolidEhlers<DisplacementDim>::JacobianMatrix calculatePlasticJacobian(
     double const eff_flow =
         std::sqrt(2. / 3. * lambda_flow_D.transpose() * lambda_flow_D);
 
-    if (eff_flow > 0)
+    if (eff_flow > 0 && s.J_2 >= tol_j2)
     {
         // intermediate variable for derivative of plastic jacobian
         KelvinVector const eff_flow23_lambda_flow_D =
@@ -372,7 +423,20 @@ typename SolidEhlers<DisplacementDim>::JacobianMatrix calculatePlasticJacobian(
         double const one_gt_pow_m = std::pow(one_gt.value, mp.m);
         double const gm = mp.gamma * mp.m;
         // derivative of yield function w.r.t. sigma
-        KelvinVector const dF_dsigma =
+        KelvinVector dF_dsigma;
+        if (s.J_2 < tol_j2)
+        {
+        dF_dsigma =
+            mp.G * ((mp.alpha * s.I_1 +
+                     4 * boost::math::pow<2>(mp.delta) *
+                         boost::math::pow<3>(s.I_1)) *
+                        identity2) /
+                (2. * sqrtPhi) +
+            mp.G * (mp.beta + 2 * mp.epsilon_p * s.I_1) * identity2;
+        }
+        else
+        {
+        dF_dsigma =
             mp.G * (one_gt_pow_m * (s.D + gm * M0) +
                     (mp.alpha * s.I_1 +
                      4 * boost::math::pow<2>(mp.delta) *
@@ -380,6 +444,7 @@ typename SolidEhlers<DisplacementDim>::JacobianMatrix calculatePlasticJacobian(
                         identity2) /
                 (2. * sqrtPhi) +
             mp.G * (mp.beta + 2 * mp.epsilon_p * s.I_1) * identity2;
+        }
 
         jacobian
             .template block<1, KelvinVectorSize>(2 * KelvinVectorSize + 2, 0)
@@ -467,12 +532,12 @@ double calculateDamageKappaD(
 /// results obtained from the local stress return algorithm.
 template <int DisplacementDim>
 Damage calculateDamage(
-    double const eps_p_V_diff,
-    double const eps_p_eff_diff,
-    typename SolidEhlers<DisplacementDim>::KelvinVector sigma,
+    double const /*eps_p_V_diff*/,
+    double const /*eps_p_eff_diff*/,
+    typename SolidEhlers<DisplacementDim>::KelvinVector /*sigma*/,
     double const kappa_d,
     DamageProperties const& dp,
-    MaterialProperties const& mp)
+    MaterialProperties const& /*mp*/)
 {
     return {kappa_d, (1 - dp.beta_d) * (1 - std::exp(-kappa_d / dp.alpha_d))};
 }
@@ -595,10 +660,11 @@ SolidEhlers<DisplacementDim>::integrateStress(
     PhysicalStressWithInvariants<DisplacementDim> s{mp.G * sigma};
     // Quit early if sigma is zero (nothing to do) or if we are still in elastic
     // zone.
-    if (sigma.squaredNorm() == 0 ||
-        yieldFunction(mp, s, calculateIsotropicHardening(
-                                 mp.kappa, mp.hardening_coefficient,
-                                 state.eps_p.eff)) < 0)
+    if ((sigma.squaredNorm() == 0 ||
+         yieldFunction(mp, s, calculateIsotropicHardening(
+                                  mp.kappa, mp.hardening_coefficient,
+                                  state.eps_p.eff)) < 0) ||
+        (_damage_properties && state.damage_prev.value() > 0.99))
     {
         tangentStiffness.setZero();
         tangentStiffness.template topLeftCorner<3, 3>().setConstant(
@@ -658,14 +724,12 @@ SolidEhlers<DisplacementDim>::integrateStress(
                     k_hardening, mp);
             };
 
-            auto const update_jacobian = [&](JacobianMatrix& jacobian) {
-                jacobian = calculatePlasticJacobian<DisplacementDim>(
-                    dt, s, solution[KelvinVectorSize * 2 + 2], mp);
-            };
-
+            double const damping = 1.;
             auto const update_solution =
                 [&](ResidualVectorType const& increment) {
-                    solution += increment;
+                    //std::cout << "increment:\n" << increment << "\n";
+                    solution += increment*damping;
+                    //std::cout << "solution:\n" << solution << "\n";
                     s = PhysicalStressWithInvariants<DisplacementDim>{
                         mp.G * solution.template segment<KelvinVectorSize>(0)};
                 };
