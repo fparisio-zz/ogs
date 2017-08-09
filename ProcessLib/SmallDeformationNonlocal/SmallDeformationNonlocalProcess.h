@@ -88,98 +88,98 @@ private:
         _material_forces->resize(DisplacementDim * mesh.getNumberOfNodes());
 
         Base::_secondary_variables.addSecondaryVariable(
-            "eps_p_V", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "eps_p_V",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtEpsPV));
         Base::_secondary_variables.addSecondaryVariable(
-            "eps_p_D_xx", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "eps_p_D_xx",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtEpsPDXX));
 
         Base::_secondary_variables.addSecondaryVariable(
-            "damage", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "damage",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtDamage));
 
         Base::_secondary_variables.addSecondaryVariable(
-            "sigma_xx", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "sigma_xx",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtSigmaXX));
 
         Base::_secondary_variables.addSecondaryVariable(
-            "sigma_yy", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "sigma_yy",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtSigmaYY));
 
         Base::_secondary_variables.addSecondaryVariable(
-            "sigma_zz", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "sigma_zz",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtSigmaZZ));
 
         Base::_secondary_variables.addSecondaryVariable(
-            "sigma_xy", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "sigma_xy",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtSigmaXY));
 
         if (DisplacementDim == 3)
         {
             Base::_secondary_variables.addSecondaryVariable(
-                "sigma_xz", 1,
-                makeExtrapolator(
+                "sigma_xz",
+                makeExtrapolator(1,
                     getExtrapolator(), _local_assemblers,
                     &SmallDeformationNonlocalLocalAssemblerInterface::
                         getIntPtSigmaXZ));
 
             Base::_secondary_variables.addSecondaryVariable(
-                "sigma_yz", 1,
-                makeExtrapolator(
+                "sigma_yz",
+                makeExtrapolator(1,
                     getExtrapolator(), _local_assemblers,
                     &SmallDeformationNonlocalLocalAssemblerInterface::
                         getIntPtSigmaYZ));
         }
 
         Base::_secondary_variables.addSecondaryVariable(
-            "epsilon_xx", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "epsilon_xx",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtEpsilonXX));
 
         Base::_secondary_variables.addSecondaryVariable(
-            "epsilon_yy", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "epsilon_yy",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtEpsilonYY));
 
         Base::_secondary_variables.addSecondaryVariable(
-            "epsilon_zz", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "epsilon_zz",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtEpsilonZZ));
 
         Base::_secondary_variables.addSecondaryVariable(
-            "epsilon_xy", 1,
-            makeExtrapolator(getExtrapolator(), _local_assemblers,
+            "epsilon_xy",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                              &SmallDeformationNonlocalLocalAssemblerInterface::
                                  getIntPtEpsilonXY));
         if (DisplacementDim == 3)
         {
             Base::_secondary_variables.addSecondaryVariable(
-                "epsilon_yz", 1,
-                makeExtrapolator(
+                "epsilon_yz",
+                makeExtrapolator(1,
                     getExtrapolator(), _local_assemblers,
                     &SmallDeformationNonlocalLocalAssemblerInterface::
                         getIntPtEpsilonYZ));
 
             Base::_secondary_variables.addSecondaryVariable(
-                "epsilon_xz", 1,
-                makeExtrapolator(
+                "epsilon_xz",
+                makeExtrapolator(1,
                     getExtrapolator(), _local_assemblers,
                     &SmallDeformationNonlocalLocalAssemblerInterface::
                         getIntPtEpsilonXZ));
