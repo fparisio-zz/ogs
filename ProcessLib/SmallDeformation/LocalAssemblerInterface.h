@@ -110,12 +110,49 @@ struct SmallDeformationLocalAssemblerInterface
         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& cache) const = 0;
 
+    virtual std::vector<double> const& getIntPtFreeEnergyDensity(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& cache) const = 0;
+
+    virtual std::vector<double> const& getIntPtEpsPV(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& cache) const = 0;
+
+    virtual std::vector<double> const& getIntPtEpsPDXX(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& cache) const = 0;
+
+    virtual std::vector<double> const& getIntPtDamage(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& cache) const = 0;
+
     // TODO move to NumLib::ExtrapolatableElement
     virtual unsigned getNumberOfIntegrationPoints() const = 0;
 
     virtual typename MaterialLib::Solids::MechanicsBase<
         DisplacementDim>::MaterialStateVariables const&
     getMaterialStateVariablesAt(unsigned /*integration_point*/) const = 0;
+
+    virtual void readIntegrationPointData(std::vector<char> const& data) = 0;
+    virtual std::size_t writeIntegrationPointData(std::vector<char>& /*data*/) = 0;
+
+    virtual std::vector<double> const& getNodalValues(
+        std::vector<double>& nodal_values) const = 0;
+
+    virtual std::vector<double> const& getNodalForces(
+        std::vector<double>& nodal_values) const = 0;
+
+    virtual std::vector<double> const& getMaterialForces(
+        std::vector<double> const& local_x,
+        std::vector<double>& nodal_values) = 0;
 };
 
 }  // namespace SmallDeformation

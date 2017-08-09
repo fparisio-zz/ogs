@@ -309,10 +309,9 @@ public:
         return element_data.ByteSize();
     };
 #else
-    std::size_t writeIntegrationPointData(std::vector<char>& data) override
+    std::size_t writeIntegrationPointData(std::vector<char>& /*data*/) override
     {
-	return 0;
-
+        return 0;
     }
 #endif
 
@@ -379,6 +378,9 @@ public:
     }
 
     std::vector<double> const& getIntPtEpsPV(
+            const double /*t*/,
+            GlobalVector const& /*current_solution*/,
+            NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& cache) const override
     {
         cache.clear();
@@ -392,6 +394,9 @@ public:
         return cache;
     }
     std::vector<double> const& getIntPtEpsPDXX(
+            const double /*t*/,
+            GlobalVector const& /*current_solution*/,
+            NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& cache) const override
     {
         cache.clear();
@@ -407,6 +412,9 @@ public:
 
 
     std::vector<double> const& getIntPtDamage(
+            const double /*t*/,
+            GlobalVector const& /*current_solution*/,
+            NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& cache) const override
     {
         cache.clear();

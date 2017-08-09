@@ -38,6 +38,8 @@ SmallDeformationProcess<DisplacementDim>::SmallDeformationProcess(
 {
     _nodal_forces = MeshLib::getOrCreateMeshProperty<double>(
         mesh, "NodalForces", MeshLib::MeshItemType::Node, DisplacementDim);
+    _material_forces = MeshLib::getOrCreateMeshProperty<double>(
+        mesh, "MaterialForces", MeshLib::MeshItemType::Node, DisplacementDim);
 }
 
 template <int DisplacementDim>
@@ -68,6 +70,30 @@ void SmallDeformationProcess<DisplacementDim>::initializeConcreteProcess(
             // by location order is needed for output
             NumLib::ComponentOrder::BY_LOCATION);
     _nodal_forces->resize(DisplacementDim * mesh.getNumberOfNodes());
+        _material_forces->resize(DisplacementDim * mesh.getNumberOfNodes());
+
+        Base::_secondary_variables.addSecondaryVariable(
+            "free_energy_density",
+            makeExtrapolator(1, getExtrapolator(), _local_assemblers,
+                             &SmallDeformationLocalAssemblerInterface<DisplacementDim>::
+                                 getIntPtFreeEnergyDensity));
+
+        Base::_secondary_variables.addSecondaryVariable(
+            "eps_p_V",
+            makeExtrapolator(1,
+                getExtrapolator(), _local_assemblers,
+                &SmallDeformationLocalAssemblerInterface<DisplacementDim>::getIntPtEpsPV));
+        Base::_secondary_variables.addSecondaryVariable(
+            "eps_p_D_xx",
+            makeExtrapolator(1,
+                getExtrapolator(), _local_assemblers,
+                &SmallDeformationLocalAssemblerInterface<DisplacementDim>::getIntPtEpsPDXX));
+
+        Base::_secondary_variables.addSecondaryVariable(
+            "damage",
+            makeExtrapolator(1,
+                getExtrapolator(), _local_assemblers,
+                &SmallDeformationLocalAssemblerInterface<DisplacementDim>::getIntPtDamage));
 
     Base::_secondary_variables.addSecondaryVariable(
         "sigma",
@@ -199,6 +225,14 @@ void SmallDeformationProcess<DisplacementDim>::initializeConcreteProcess(
             makeExtrapolator(num_components, getExtrapolator(),
                              _local_assemblers, std::move(getIntPtValues)));
     }
+
+#ifdef PROTOBUF_FOUND
+        Base::integration_point_writer = [this](
+            MeshLib::PropertyVector<char>& output,
+            MeshLib::PropertyVector<std::size_t>& offsets) {
+            return writeIntegrationPointData(output, offsets);
+        };
+#endif  // PROTOBUF_FOUND
 }
 
 template <int DisplacementDim>
