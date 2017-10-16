@@ -56,6 +56,7 @@ struct MechanicsBase
 
         virtual void pushBackState() = 0;
         virtual double getLocalVariable() const { return 0; }
+        virtual double getLocalRateKappaD() const { return 0; }
     };
 
     /// Polymorphic creator for MaterialStateVariables objects specific for a
@@ -135,9 +136,9 @@ struct MechanicsBase
     }
 	
     virtual double computeFreeEnergyDensity(
-        KelvinVector const& eps,
-        KelvinVector const& sigma,
-        MaterialStateVariables const& material_state_variables) const
+        KelvinVector const& /*eps*/,
+        KelvinVector const& /*sigma*/,
+        MaterialStateVariables const& /*material_state_variables*/) const
     {
         return -42;
     }
