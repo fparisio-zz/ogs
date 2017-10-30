@@ -420,7 +420,7 @@ public:
             auto const& state =
                 static_cast<MaterialLib::Solids::Ehlers::StateVariables<
                     DisplacementDim> const&>(*ip_data.material_state_variables);
-            cache.push_back(state.damage.value());
+            cache.push_back(state.damage);
         }
 
         return cache;
