@@ -501,7 +501,7 @@ AddTest(
 )
 
 AddTest(
-    NAME Mechanics_PlasticDamageNonlocalModel_NNLED_Ehlers_Damage_BeamCoarse_3DTetra
+    NAME LARGE_Mechanics_PlasticDamageNonlocalModel_NNLED_Ehlers_Damage_BeamCoarse_3DTetra
     PATH Mechanics/EhlersDamageNonLocal/beam/3D_tetr
     EXECUTABLE ogs
     EXECUTABLE_ARGS beam.prj
