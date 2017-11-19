@@ -31,7 +31,7 @@ AddTest(
     EXECUTABLE_ARGS bar.prj
     TESTER vtkdiff
     REQUIREMENTS NOT OGS_USE_MPI
-    ABSTOL 2e-11 RELTOL 1e-13
+    ABSTOL 2e-9 RELTOL 1e-11
     DIFF_DATA
     out_bar_medium_ED_pcs_0_ts_30_t_0.300000.vtu out_bar_medium_ED_pcs_0_ts_30_t_0.300000.vtu displacement displacement
     out_bar_medium_ED_pcs_0_ts_30_t_0.300000.vtu out_bar_medium_ED_pcs_0_ts_30_t_0.300000.vtu damage damage
@@ -231,7 +231,7 @@ AddTest(
     EXECUTABLE_ARGS beam.prj
     TESTER vtkdiff
     REQUIREMENTS NOT OGS_USE_MPI
-    ABSTOL 2e-11 RELTOL 1e-13
+    ABSTOL 2e-6 RELTOL 1e-8
     DIFF_DATA
     out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu displacement displacement
     out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu damage damage
@@ -277,7 +277,7 @@ AddTest(
     EXECUTABLE_ARGS beam.prj
     TESTER vtkdiff
     REQUIREMENTS NOT OGS_USE_MPI
-    ABSTOL 2e-11 RELTOL 1e-13
+    ABSTOL 2e-6 RELTOL 1e-8
     DIFF_DATA
     out_beam_medium_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_medium_ED_pcs_0_ts_40_t_0.400000.vtu displacement displacement
     out_beam_medium_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_medium_ED_pcs_0_ts_40_t_0.400000.vtu damage damage
@@ -323,7 +323,7 @@ AddTest(
     EXECUTABLE_ARGS beam.prj
     TESTER vtkdiff
     REQUIREMENTS NOT OGS_USE_MPI
-    ABSTOL 2e-11 RELTOL 1e-13
+    ABSTOL 2e-6 RELTOL 1e-8
     DIFF_DATA
     out_beam_fine_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_fine_ED_pcs_0_ts_40_t_0.400000.vtu displacement displacement
     out_beam_fine_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_fine_ED_pcs_0_ts_40_t_0.400000.vtu damage damage
@@ -369,7 +369,7 @@ AddTest(
     EXECUTABLE_ARGS beam.prj
     TESTER vtkdiff
     REQUIREMENTS NOT OGS_USE_MPI
-    ABSTOL 2e-11 RELTOL 1e-13
+    ABSTOL 2e-6 RELTOL 1e-8
     DIFF_DATA
     out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu displacement displacement
     out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu damage damage
@@ -415,7 +415,7 @@ AddTest(
     EXECUTABLE_ARGS beam.prj
     TESTER vtkdiff
     REQUIREMENTS NOT OGS_USE_MPI
-    ABSTOL 2e-11 RELTOL 1e-13
+    ABSTOL 2e-6 RELTOL 1e-8
     DIFF_DATA
     out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu displacement displacement
     out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu damage damage
@@ -461,7 +461,7 @@ AddTest(
     EXECUTABLE_ARGS beam.prj
     TESTER vtkdiff
     REQUIREMENTS NOT OGS_USE_MPI
-    ABSTOL 2e-11 RELTOL 1e-13
+    ABSTOL 2e-6 RELTOL 1e-8
     DIFF_DATA
     out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu displacement displacement
     out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu out_beam_coarse_ED_pcs_0_ts_40_t_0.400000.vtu damage damage
@@ -548,7 +548,7 @@ AddTest(
 )
 
 AddTest(
-    NAME Mechanics_PlasticDamageNonlocalModel_NNLED_Ehlers_Damage_HoledBeam
+    NAME LARGE_Mechanics_PlasticDamageNonlocalModel_NNLED_Ehlers_Damage_HoledBeam
     PATH Mechanics/EhlersDamageNonLocal/holed_beam
     EXECUTABLE ogs
     EXECUTABLE_ARGS holed_beam.prj
