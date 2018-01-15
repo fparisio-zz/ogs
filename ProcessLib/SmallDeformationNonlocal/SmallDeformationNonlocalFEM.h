@@ -331,7 +331,7 @@ public:
                 typename BMatricesType::BMatrixType>(dNdx, N, x_coord,
                                                      _is_axially_symmetric);
             auto const& eps_prev = _ip_data[ip].eps_prev;
-            auto const& sigma_prev = _ip_data[ip].sigma_prev;
+            auto& sigma_prev = _ip_data[ip].sigma_prev;
 
             auto& eps = _ip_data[ip].eps;
             auto& sigma = _ip_data[ip].sigma;
@@ -352,12 +352,36 @@ public:
 
             // Compute sigma_eff from damage total stress sigma
             using KelvinVectorType = typename BMatricesType::KelvinVectorType;
+
+            if(t>1.0)
+            {
+                double p_med=1.0e6;
+                /*std::cout << "Sigma" << endl;
+                std::cout << sigma_prev[1] << endl;
+                std::cout << sigma_prev[1]-p_med*damage_prev*(t-1.0) << endl;*/
+
+                sigma_prev[0]=sigma_prev[0]-p_med*damage_prev;
+                sigma_prev[1]=sigma_prev[1]-p_med*damage_prev;
+            }
             KelvinVectorType const sigma_eff_prev =
                 sigma_prev / (1. - damage_prev);
+            /*{
+                std::cout << "*********************************" << endl;
+                std::cout << "Sigma" << endl;
+                std::cout << sigma_prev[0] << endl;
+                std::cout << sigma_prev[1] << endl;
+                std::cout << sigma_prev[2] << endl;
+                std::cout << sigma_prev[3] << endl;
+                std::cout << "*********************************" << endl;
+            }*/
+
+            // sigma=sigma - p (-d)
 
             auto&& solution = _ip_data[ip].solid_material.integrateStress(
                 t, x_position, _process_data.dt, eps_prev, eps, sigma_eff_prev,
                 *state);
+
+            //sigma=sigma + p (-d)
 
             if (!solution)
                 OGS_FATAL("Computation of local constitutive relation failed.");
@@ -576,7 +600,14 @@ public:
                                              damage_properties.beta_d);
                     damage = std::max(0., damage);
                 }
+                if(t>1.0)
+                {
+                    double p_med=1.0e6;
+                    sigma[0]=sigma[0]+p_med*damage;
+                    sigma[1]=sigma[1]+p_med*damage;
+                }
                 sigma = sigma * (1. - damage);
+
             }
 
             local_b.noalias() -= B.transpose() * sigma * w;

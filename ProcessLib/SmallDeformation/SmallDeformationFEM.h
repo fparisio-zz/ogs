@@ -226,6 +226,8 @@ public:
 
             auto const& eps_prev = _ip_data[ip].eps_prev;
             auto const& sigma_prev = _ip_data[ip].sigma_prev;
+            auto& sigma_prev_2 = _ip_data[ip].sigma_prev;
+            auto& sigma_r = _ip_data[ip].sigma_prev;
 
             auto& eps = _ip_data[ip].eps;
             auto& sigma = _ip_data[ip].sigma;
@@ -236,8 +238,9 @@ public:
                 Eigen::Map<typename BMatricesType::NodalForceVectorType const>(
                     local_x.data(), ShapeFunction::NPOINTS * DisplacementDim);
 
+
             auto&& solution = _ip_data[ip].solid_material.integrateStress(
-                t, x_position, _process_data.dt, eps_prev, eps, sigma_prev,
+                t, x_position, _process_data.dt, eps_prev, eps, sigma_prev_2,
                 *state);
 
             if (!solution)
@@ -246,10 +249,18 @@ public:
             KelvinMatrixType<DisplacementDim> C;
             std::tie(sigma, state, C) = std::move(*solution);
 
+            if(t>1.0)
+            {
+                double pressure=1.0e5;
+                sigma_r[0]=sigma[0]-pressure*(t-1.0);
+                sigma_r[1]=sigma[1]-pressure*(t-1.0);
+                sigma_r[2]=sigma[2]-pressure*(t-1.0);
+            }
+
             auto const rho = _process_data.solid_density(t, x_position)[0];
             auto const& b = _process_data.specific_body_force;
             local_b.noalias() -=
-                (B.transpose() * sigma - N_u_op.transpose() * rho * b) * w;
+                (B.transpose() * sigma_r - N_u_op.transpose() * rho * b) * w;
             local_Jac.noalias() += B.transpose() * C * B * w;
         }
     }
