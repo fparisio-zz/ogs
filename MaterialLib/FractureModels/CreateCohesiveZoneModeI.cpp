@@ -51,8 +51,7 @@ std::unique_ptr<FractureModelBase<DisplacementDim>> createCohesiveZoneModeI(
         //! \ogs_file_param{material__fracture_model__CohesiveZoneModeI__tension_cutoff}
         config.getConfigParameter<bool>("tension_cutoff");
 
-    typename CohesiveZoneModeI<DisplacementDim>::MaterialProperties mp{
-        Kn, Ks, Gc, t_np};
+    MaterialPropertiesParameters mp{Kn, Ks, Gc, t_np};
 
     return std::make_unique<CohesiveZoneModeI<DisplacementDim>>(
         penalty_aperture_cutoff, tension_cutoff, mp);

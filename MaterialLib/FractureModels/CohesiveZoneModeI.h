@@ -22,6 +22,53 @@ namespace Fracture
 {
 namespace CohesiveZoneModeI
 {
+/// Variables specific to the material model
+struct MaterialPropertiesParameters
+{
+    using P = ProcessLib::Parameter<double>;
+    using X = ProcessLib::SpatialPosition;
+
+public:
+    MaterialPropertiesParameters(P const& normal_stiffness_,
+                                 P const& shear_stiffness_,
+                                 P const& fracture_toughness,
+                                 P const& peak_normal_traction)
+        : normal_stiffness(normal_stiffness_),
+          shear_stiffness(shear_stiffness_),
+          _fracture_toughness(fracture_toughness),
+          _peak_normal_traction(peak_normal_traction)
+    {
+    }
+
+    /// Assuming initially stress-free state.
+    double fracture_opening_at_peak_traction(double const t, X const& x) const
+    {
+        return _peak_normal_traction(t, x)[0] / normal_stiffness(t, x)[0];
+    }
+
+    /// Assuming initially stress-free state.
+    double fracture_opening_at_residual_traction(double const t,
+                                                 X const& x) const
+    {
+        return 2 * _fracture_toughness(t, x)[0] /
+               _peak_normal_traction(t, x)[0];
+    }
+
+public:
+    /// Normal stiffness given in units of stress per length.
+    /// TODO (naumov) update other models' comment.
+    P const& normal_stiffness;
+    /// Shear stiffness given in units of stress per length.
+    P const& shear_stiffness;
+
+private:
+    /// Fracture toughness/critical energy release rate given in of stress
+    /// times lengths.
+    P const& _fracture_toughness;
+    /// Peak normal traction given in units of stress.
+    P const& _peak_normal_traction;
+};
+
 template <int DisplacementDim>
 struct StateVariables
     : public FractureModelBase<DisplacementDim>::MaterialStateVariables
@@ -48,58 +95,10 @@ public:
     }
 
 public:
-    /// Variables specific to the material model
-    struct MaterialProperties
-    {
-        using P = ProcessLib::Parameter<double>;
-        using X = ProcessLib::SpatialPosition;
-
-    public:
-        MaterialProperties(P const& normal_stiffness_,
-                           P const& shear_stiffness_,
-                           P const& fracture_toughness,
-                           P const& peak_normal_traction)
-            : normal_stiffness(normal_stiffness_),
-              shear_stiffness(shear_stiffness_),
-              _fracture_toughness(fracture_toughness),
-              _peak_normal_traction(peak_normal_traction)
-        {
-        }
-
-        /// Assuming initially stress-free state.
-        double fracture_opening_at_peak_traction(double const t,
-                                                 X const& x) const
-        {
-            return _peak_normal_traction(t, x)[0] / normal_stiffness(t, x)[0];
-        }
-
-        /// Assuming initially stress-free state.
-        double fracture_opening_at_residual_traction(double const t,
-                                                     X const& x) const
-        {
-            return 2 * _fracture_toughness(t, x)[0] /
-                   _peak_normal_traction(t, x)[0];
-        }
-
-    public:
-        /// Normal stiffness given in units of stress per length.
-        /// TODO (naumov) update other models' comment.
-        P const& normal_stiffness;
-        /// Shear stiffness given in units of stress per length.
-        P const& shear_stiffness;
-
-    private:
-        /// Fracture toughness/critical energy release rate given in of stress
-        /// times lengths.
-        P const& _fracture_toughness;
-        /// Peak normal traction given in units of stress.
-        P const& _peak_normal_traction;
-    };
-
 public:
     explicit CohesiveZoneModeI(double const penalty_aperture_cutoff,
                                bool const tension_cutoff,
-                               MaterialProperties material_properties)
+                               MaterialPropertiesParameters material_properties)
         : _penalty_aperture_cutoff(penalty_aperture_cutoff),
           _tension_cutoff(tension_cutoff),
           _mp(std::move(material_properties))
@@ -150,7 +149,7 @@ private:
     /// opposed.
     bool const _tension_cutoff;
 
-    MaterialProperties _mp;
+    MaterialPropertiesParameters _mp;
 };
 
 }  // namespace CohesiveZoneModeI

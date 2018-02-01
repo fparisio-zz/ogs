@@ -30,9 +30,8 @@ struct MaterialPropertyValues
     double w_np = 0.0;
     double w_nf = 0.0;
 
-    template <typename MaterialProperties>
-    MaterialPropertyValues(MaterialProperties const& mp, double const t,
-                           ProcessLib::SpatialPosition const& x,
+    MaterialPropertyValues(MaterialPropertiesParameters const& mp,
+                           double const t, ProcessLib::SpatialPosition const& x,
                            double const aperture0)
     {
         Kn = mp.normal_stiffness(t, x)[0];
