@@ -65,6 +65,29 @@ struct MaterialPropertiesParameters
     P const& peak_normal_traction;
 };
 
+/// Evaluated MaterialPropertiesParameters container, see its documentation for
+/// details.
+struct MaterialProperties final
+{
+    MaterialProperties(double const t, ProcessLib::SpatialPosition const& x,
+                       MaterialPropertiesParameters const& mp)
+        : Kn(mp.normal_stiffness(t, x)[0]),
+          Ks(mp.shear_stiffness(t, x)[0]),
+          Gc(mp.fracture_toughness(t, x)[0]),
+          t_np(mp.peak_normal_traction(t, x)[0]),
+          w_np(mp.fracture_opening_at_peak_traction(t, x)),
+          w_nf(mp.fracture_opening_at_residual_traction(t, x))
+    {
+    }
+
+    double const Kn;
+    double const Ks;
+    double const Gc;
+    double const t_np;
+    double const w_np;
+    double const w_nf;
+};
+
 template <int DisplacementDim>
 struct StateVariables
     : public FractureModelBase<DisplacementDim>::MaterialStateVariables
@@ -133,6 +156,12 @@ public:
             Kep,
         typename FractureModelBase<DisplacementDim>::MaterialStateVariables&
             material_state_variables) override;
+
+    MaterialProperties evaluatedMaterialProperties(
+        double const t, ProcessLib::SpatialPosition const& x) const
+    {
+        return MaterialProperties(t, x, _mp);
+    }
 
 private:
     /// Compressive normal displacements above this value will not enter the

@@ -23,24 +23,6 @@ namespace CohesiveZoneModeI
 {
 namespace
 {
-struct MaterialPropertyValues
-{
-    double Kn = 0.0;
-    double Ks = 0.0;
-    double w_np = 0.0;
-    double w_nf = 0.0;
-
-    MaterialPropertyValues(MaterialPropertiesParameters const& mp,
-                           double const t, ProcessLib::SpatialPosition const& x,
-                           double const aperture0)
-    {
-        Kn = mp.normal_stiffness(t, x)[0];
-        Ks = mp.shear_stiffness(t, x)[0];
-        w_np = mp.fracture_opening_at_peak_traction(t, x);
-        w_nf = mp.fracture_opening_at_residual_traction(t, x);
-    }
-};
-
 double computeDamage(double const damage_prev,
                      double const w_n,
                      double const w_np,
@@ -82,7 +64,7 @@ void CohesiveZoneModeI<DisplacementDim>::computeConstitutiveRelation(
     //reset damage in each iteration
     state.setInitialConditions();
 
-    auto const mp = MaterialPropertyValues(_mp, t, x, aperture0);
+    auto const mp = evaluatedMaterialProperties(t, x);
 
     C.setZero();
 
