@@ -28,45 +28,41 @@ struct MaterialPropertiesParameters
     using P = ProcessLib::Parameter<double>;
     using X = ProcessLib::SpatialPosition;
 
-public:
     MaterialPropertiesParameters(P const& normal_stiffness_,
                                  P const& shear_stiffness_,
-                                 P const& fracture_toughness,
-                                 P const& peak_normal_traction)
+                                 P const& fracture_toughness_,
+                                 P const& peak_normal_traction_)
         : normal_stiffness(normal_stiffness_),
           shear_stiffness(shear_stiffness_),
-          _fracture_toughness(fracture_toughness),
-          _peak_normal_traction(peak_normal_traction)
+          fracture_toughness(fracture_toughness_),
+          peak_normal_traction(peak_normal_traction_)
     {
     }
 
     /// Assuming initially stress-free state.
     double fracture_opening_at_peak_traction(double const t, X const& x) const
     {
-        return _peak_normal_traction(t, x)[0] / normal_stiffness(t, x)[0];
+        return peak_normal_traction(t, x)[0] / normal_stiffness(t, x)[0];
     }
 
     /// Assuming initially stress-free state.
     double fracture_opening_at_residual_traction(double const t,
                                                  X const& x) const
     {
-        return 2 * _fracture_toughness(t, x)[0] /
-               _peak_normal_traction(t, x)[0];
+        return 2 * fracture_toughness(t, x)[0] / peak_normal_traction(t, x)[0];
     }
 
-public:
     /// Normal stiffness given in units of stress per length.
     /// TODO (naumov) update other models' comment.
     P const& normal_stiffness;
     /// Shear stiffness given in units of stress per length.
     P const& shear_stiffness;
 
-private:
     /// Fracture toughness/critical energy release rate given in of stress
     /// times lengths.
-    P const& _fracture_toughness;
+    P const& fracture_toughness;
     /// Peak normal traction given in units of stress.
-    P const& _peak_normal_traction;
+    P const& peak_normal_traction;
 };
 
 template <int DisplacementDim>
