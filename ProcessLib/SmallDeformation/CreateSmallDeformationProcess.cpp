@@ -94,6 +94,12 @@ createSmallDeformationProcess(
         material = MaterialLib::Solids::Lubby2::createLubby2<DisplacementDim>(
             parameters, constitutive_relation_config);
     }
+    else if (type == "ThermoPlasticBDT")
+    {
+        material =
+            MaterialLib::Solids::ThermoPlasticBDT::createThermoPlasticBDT<
+                DisplacementDim>(parameters, constitutive_relation_config);
+    }
     else
     {
         OGS_FATAL(

@@ -160,7 +160,6 @@ calculatePlasticResidual(
     using KelvinVector =
         MathLib::KelvinVector::KelvinVectorType<DisplacementDim>;
 
-    auto const& P_dev = Invariants::deviatoric_projection;
     auto const& identity2 = Invariants::identity2;
 
     // double const theta = s.J_3 / (s.J_2 * std::sqrt(s.J_2));
@@ -568,10 +567,17 @@ SolidThermoPlasticBDT<DisplacementDim>::integrateStress(
                     k_hardening, mp);
             };
 
-            // auto const update_jacobian = [&](JacobianMatrix& jacobian) {
-            //    jacobian = calculatePlasticJacobian<DisplacementDim>(
-            //        dt, s, solution[KelvinVectorSize * 2 + 2], mp);
-            //};
+            auto const update_jacobian = [&](JacobianMatrix& jacobian) {
+                jacobian = calculatePlasticJacobian<DisplacementDim>(
+                    dt, s, solution[KelvinVectorSize * 2 + 2], mp);
+            };
+
+            auto const update_solution =
+                [&](ResidualVectorType const& increment) {
+                    solution += increment;
+                    s = PhysicalStressWithInvariants<DisplacementDim>{
+                        mp.G * solution.template segment<KelvinVectorSize>(0)};
+                };
 
             // std::cout << "analytical J:\n" << jacobian << "\n";
 
@@ -606,20 +612,11 @@ SolidThermoPlasticBDT<DisplacementDim>::integrateStress(
                 }
                 // std::cout << "numerical  J:\n" << jacobian_num << "\n";
                 solution = solution_org;  // Reset to original
+                jacobian = jacobian_num;
 
                 // std::cout << "difference  J:\n" << jacobian_num - jacobian <<
                 // "\n";
             }
-            auto const update_jacobian = [&](JacobianMatrix& jacobian) {
-                jacobian = jacobian_num;
-            };
-
-            auto const update_solution =
-                [&](ResidualVectorType const& increment) {
-                    solution += increment;
-                    s = PhysicalStressWithInvariants<DisplacementDim>{
-                        mp.G * solution.template segment<KelvinVectorSize>(0)};
-                };
 
             auto newton_solver = NumLib::NewtonRaphson<
                 decltype(linear_solver), JacobianMatrix,
