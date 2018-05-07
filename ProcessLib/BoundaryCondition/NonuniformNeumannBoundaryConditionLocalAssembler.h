@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "MeshLib/PropertyVector.h"
 #include "NumLib/DOF/DOFTableUtil.h"
 #include "NumLib/Function/Interpolation.h"
@@ -28,6 +29,7 @@ struct NonuniformNeumannBoundaryConditionData
     NumLib::LocalToGlobalIndexMap const& dof_table_bulk;
     int const variable_id_bulk;
     int const component_id_bulk;
+    std::unique_ptr<MathLib::PiecewiseLinearInterpolation> curve;
 };
 
 template <typename ShapeFunction, typename IntegrationMethod,
@@ -56,12 +58,14 @@ public:
 
     void assemble(std::size_t const id,
                   NumLib::LocalToGlobalIndexMap const& dof_table_boundary,
-                  double const /*t*/, const GlobalVector& /*x*/,
+                  double const t, const GlobalVector& /*x*/,
                   GlobalMatrix& /*K*/, GlobalVector& b) override
     {
         _local_rhs.setZero();
 
         auto indices = NumLib::getIndices(id, dof_table_boundary);
+
+        double const factor = _data.curve ? _data.curve->getValue(t) : 1.0;
 
         // TODO lots of heap allocations.
         std::vector<double> neumann_param_nodal_values_local;
@@ -69,7 +73,7 @@ public:
         for (auto i : indices)
         {
             neumann_param_nodal_values_local.push_back(
-                _data.values.getComponent(i, 0));
+                factor * _data.values.getComponent(i, 0));
         }
 
         auto const n_integration_points = Base::_ns_and_weights.size();

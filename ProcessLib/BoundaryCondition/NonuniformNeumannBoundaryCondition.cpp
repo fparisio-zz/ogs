@@ -9,6 +9,7 @@
 
 #include "NonuniformNeumannBoundaryCondition.h"
 
+#include "MathLib/Curve/CreatePiecewiseLinearCurve.h"
 #include "MeshLib/IO/readMeshFromFile.h"
 #include "ProcessLib/Utils/ProcessUtils.h"
 
@@ -81,12 +82,20 @@ createNonuniformNeumannBoundaryCondition(
                   mapping_to_bulk_nodes_property.c_str());
     }
 
+    std::unique_ptr<MathLib::PiecewiseLinearInterpolation> curve;
+    if (auto const curve_config = config.getConfigSubtreeOptional("curve"))
+    {
+        DBUG("reading curve to scale BC values...");
+        curve = MathLib::createPiecewiseLinearCurve<
+            MathLib::PiecewiseLinearInterpolation>(*curve_config);
+    }
+
     return std::make_unique<NonuniformNeumannBoundaryCondition>(
         integration_order, shapefunction_order, bulk_mesh.getDimension(),
         std::move(boundary_mesh),
         NonuniformNeumannBoundaryConditionData{
             *property, bulk_mesh.getID(), *mapping_to_bulk_nodes, dof_table,
-            variable_id, component_id});
+            variable_id, component_id, std::move(curve)});
 }
 
 }  // ProcessLib

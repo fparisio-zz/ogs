@@ -13,6 +13,7 @@
 
 #include "BoundaryCondition.h"
 
+#include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "MeshLib/PropertyVector.h"
 #include "NumLib/DOF/DOFTableUtil.h"
 #include "NumLib/DOF/LocalToGlobalIndexMap.h"
@@ -34,14 +35,16 @@ public:
         MeshLib::PropertyVector<std::size_t> const& mapping_to_bulk_nodes,
         NumLib::LocalToGlobalIndexMap const& dof_table_bulk,
         int const variable_id_bulk,
-        int const component_id_bulk)
+        int const component_id_bulk,
+        std::unique_ptr<MathLib::PiecewiseLinearInterpolation>&& curve)
         : _bulk_mesh_id(bulk_mesh_id),
           _values(values),
           _boundary_mesh(std::move(boundary_mesh)),
           _mapping_to_bulk_nodes(mapping_to_bulk_nodes),
           _dof_table_bulk(dof_table_bulk),
           _variable_id_bulk(variable_id_bulk),
-          _component_id_bulk(component_id_bulk)
+          _component_id_bulk(component_id_bulk),
+          _curve(std::move(curve))
     {
         if (_variable_id_bulk >=
                 static_cast<int>(_dof_table_bulk.getNumberOfVariables()) ||
@@ -60,10 +63,11 @@ public:
     }
 
     void getEssentialBCValues(
-        const double /*t*/,
+        const double t,
         NumLib::IndexValueVector<GlobalIndexType>& bc_values) const override
     {
         SpatialPosition pos;
+        double const factor = _curve ? _curve->getValue(t) : 1.0;
 
         bc_values.ids.clear();
         bc_values.values.clear();
@@ -86,7 +90,7 @@ public:
             assert(global_index != NumLib::MeshComponentMap::nop);
 
             bc_values.ids.push_back(global_index);
-            bc_values.values.push_back(_values.getComponent(i, 0));
+            bc_values.values.push_back(factor * _values.getComponent(i, 0));
         }
     }
 
@@ -98,6 +102,7 @@ private:
     NumLib::LocalToGlobalIndexMap const& _dof_table_bulk;
     int const _variable_id_bulk;
     int const _component_id_bulk;
+    std::unique_ptr<MathLib::PiecewiseLinearInterpolation> const _curve;
 };
 
 std::unique_ptr<NonuniformDirichletBoundaryCondition>
