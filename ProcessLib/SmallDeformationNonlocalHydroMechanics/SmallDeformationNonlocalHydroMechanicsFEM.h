@@ -54,12 +54,15 @@ class SmallDeformationNonlocalHydroMechanicsLocalAssembler
 {
 public:
     static int const DisplacementDim = DisplacementDim_;
-    using ShapeMatricesType =
+    using ShapeMatricesTypeDisplacement =
         ShapeMatrixPolicyType<ShapeFunctionDisplacement, DisplacementDim>;
-    using NodalMatrixType = typename ShapeMatricesType::NodalMatrixType;
-    using NodalVectorType = typename ShapeMatricesType::NodalVectorType;
-    using GlobalDimVectorType = typename ShapeMatricesType::GlobalDimVectorType;
-    using ShapeMatrices = typename ShapeMatricesType::ShapeMatrices;
+    using ShapeMatricesTypePressure =
+        ShapeMatrixPolicyType<ShapeFunctionPressure, DisplacementDim>;
+
+    using NodalMatrixType = typename ShapeMatricesTypeDisplacement::NodalMatrixType;
+    using NodalVectorType = typename ShapeMatricesTypeDisplacement::NodalVectorType;
+    using GlobalDimVectorType = typename ShapeMatricesTypeDisplacement::GlobalDimVectorType;
+    using ShapeMatrices = typename ShapeMatricesTypeDisplacement::ShapeMatrices;
     using BMatricesType = BMatrixPolicyType<ShapeFunctionDisplacement, DisplacementDim>;
 
     using BMatrixType = typename BMatricesType::BMatrixType;
@@ -339,7 +342,7 @@ public:
     void assemble(double const /*t*/, std::vector<double> const& /*local_x*/,
                   std::vector<double>& /*local_M_data*/,
                   std::vector<double>& /*local_K_data*/,
-                  std::vector<double>& /*local_b_data*/) override
+                  std::vector<double>& /*local_rhs_data*/) override
     {
         OGS_FATAL(
             "SmallDeformationNonlocalHydroMechanicsLocalAssembler: assembly without jacobian "
@@ -406,13 +409,13 @@ public:
                 DisplacementDim>::MaterialStateVariables>
                 new_state;
 
-            // Compute sigma_eff from damage total stress sigma
+            // Compute sigma_eff_dam from damage total stress sigma
             using KelvinVectorType = typename BMatricesType::KelvinVectorType;
-            KelvinVectorType const sigma_eff_prev =
+            KelvinVectorType const sigma_eff_dam_prev =
                 sigma_prev / (1. - damage_prev);
 
             auto&& solution = _ip_data[ip].solid_material.integrateStress(
-                t, x_position, _process_data.dt, eps_prev, eps, sigma_eff_prev,
+                t, x_position, _process_data.dt, eps_prev, eps, sigma_eff_dam_prev,
                 *state);
 
             if (!solution)
@@ -479,21 +482,49 @@ public:
 
     void assembleWithJacobian(double const t,
                               std::vector<double> const& local_x,
-                              std::vector<double> const& /*local_xdot*/,
+                              std::vector<double> const& local_xdot,
                               const double /*dxdot_dx*/, const double /*dx_dx*/,
                               std::vector<double>& /*local_M_data*/,
                               std::vector<double>& /*local_K_data*/,
-                              std::vector<double>& local_b_data,
+                              std::vector<double>& local_rhs_data,
                               std::vector<double>& local_Jac_data) override
     {
+        static const int pressure_index = 0;
+        static const int pressure_size = ShapeFunctionPressure::NPOINTS;
+        static const int displacement_index = ShapeFunctionPressure::NPOINTS;
+        static const int displacement_size =
+            ShapeFunctionDisplacement::NPOINTS * DisplacementDim;
 
-        auto const local_matrix_size = local_x.size();
+        assert(local_x.size() == pressure_size + displacement_size);
 
-        auto local_Jac = MathLib::createZeroedMatrix<StiffnessMatrixType>(
-            local_Jac_data, local_matrix_size, local_matrix_size);
+        auto p = Eigen::Map<typename ShapeMatricesTypePressure::template VectorType<
+            pressure_size> const>(local_x.data() + pressure_index, pressure_size);
 
-        auto local_b = MathLib::createZeroedVector<NodalDisplacementVectorType>(
-            local_b_data, local_matrix_size);
+        auto u =
+            Eigen::Map<typename ShapeMatricesTypeDisplacement::template VectorType<
+                displacement_size> const>(local_x.data() + displacement_index,
+                                          displacement_size);
+
+        auto p_dot =
+            Eigen::Map<typename ShapeMatricesTypePressure::template VectorType<
+                pressure_size> const>(local_xdot.data() + pressure_index,
+                                      pressure_size);
+        auto u_dot =
+            Eigen::Map<typename ShapeMatricesTypeDisplacement::template VectorType<
+                displacement_size> const>(local_xdot.data() + displacement_index,
+                                          displacement_size);
+
+        auto local_Jac = MathLib::createZeroedMatrix<
+            typename ShapeMatricesTypeDisplacement::template MatrixType<
+                displacement_size + pressure_size,
+                displacement_size + pressure_size>>(
+            local_Jac_data, displacement_size + pressure_size,
+            displacement_size + pressure_size);
+
+        auto local_rhs = MathLib::createZeroedVector<
+            typename ShapeMatricesTypeDisplacement::template VectorType<
+                displacement_size + pressure_size>>(
+            local_rhs_data, displacement_size + pressure_size);
 
         unsigned const n_integration_points =
             _integration_method.getNumberOfPoints();
