@@ -381,7 +381,7 @@ public:
             //          << "\n";
 
             auto const x_coord =
-                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesType>(
+                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
                     _element, N);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunctionDisplacement::NPOINTS,
@@ -529,6 +529,8 @@ public:
         unsigned const n_integration_points =
             _integration_method.getNumberOfPoints();
 
+        double const& dt = _process_data.dt;
+
         SpatialPosition x_position;
         x_position.setElementID(_element.getID());
 
@@ -575,15 +577,20 @@ public:
             x_position.setIntegrationPoint(ip);
             auto const& w = _ip_data[ip].integration_weight;
 
-            auto const& N = _ip_data[ip].N;
-            auto const& dNdx = _ip_data[ip].dNdx;
+            auto const& N_u_op = _ip_data[ip].N_u_op;
+
+            auto const& N_u = _ip_data[ip].N_u;
+            auto const& dNdx_u = _ip_data[ip].dNdx_u;
+
+            auto const& N_p = _ip_data[ip].N_p;
+            auto const& dNdx_p = _ip_data[ip].dNdx_p;
 
             auto const x_coord =
-                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesType>(
-                    _element, N);
+                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
+                    _element, N_u);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunctionDisplacement::NPOINTS,
-                typename BMatricesType::BMatrixType>(dNdx, N, x_coord,
+                typename BMatricesType::BMatrixType>(dNdx_u, N_u, x_coord,
                                                      _is_axially_symmetric);
             // auto const& eps_prev = _ip_data[ip].eps_prev;
             // auto const& sigma_prev = _ip_data[ip].sigma_prev;
@@ -685,7 +692,7 @@ public:
             }
 #pragma omp critical
             {
-                local_b.noalias() -= B.transpose() * sigma_r * w;
+                local_rhs.noalias() -= B.transpose() * sigma_r * w;
                 local_Jac.noalias() +=
                     B.transpose() * C * (1. - damage) * B * w;
             }
@@ -731,7 +738,7 @@ public:
             auto const& d = _ip_data[ip].damage;
 
             auto const& x_coord =
-                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesType>(
+                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
                     _element, N);
             GradientMatrixType G(DisplacementDim * DisplacementDim +
                                      (DisplacementDim == 2 ? 1 : 0),
@@ -753,7 +760,7 @@ public:
         std::vector<double>& nodal_values) override
     {
         return ProcessLib::SmallDeformation::getMaterialForces<
-            DisplacementDim, ShapeFunctionDisplacement, ShapeMatricesType,
+            DisplacementDim, ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement,
             typename BMatricesType::NodalForceVectorType,
             NodalDisplacementVectorType, GradientVectorType,
             GradientMatrixType>(local_x, nodal_values, _integration_method,
@@ -773,7 +780,7 @@ public:
         std::vector<double>& nodal_values) const override
     {
         nodal_values.clear();
-        auto local_b = MathLib::createZeroedVector<NodalDisplacementVectorType>(
+        auto local_rhs = MathLib::createZeroedVector<NodalDisplacementVectorType>(
             nodal_values, ShapeFunctionDisplacement::NPOINTS * DisplacementDim);
 
         unsigned const n_integration_points =
@@ -791,7 +798,7 @@ public:
             auto const& dNdx = _ip_data[ip].dNdx;
 
             auto const x_coord =
-                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesType>(
+                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
                     _element, N);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunctionDisplacement::NPOINTS,
@@ -799,7 +806,7 @@ public:
                                                      _is_axially_symmetric);
             auto& sigma = _ip_data[ip].sigma;
 
-            local_b.noalias() += B.transpose() * sigma * w;
+            local_rhs.noalias() += B.transpose() * sigma * w;
         }
 
         return nodal_values;
@@ -1066,9 +1073,9 @@ private:
     SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>& _process_data;
 
     std::vector<
-        IntegrationPointData<BMatricesType, ShapeMatricesType, DisplacementDim>,
+        IntegrationPointData<BMatricesType, ShapeMatricesTypeDisplacement, DisplacementDim>,
         Eigen::aligned_allocator<IntegrationPointData<
-            BMatricesType, ShapeMatricesType, DisplacementDim>>>
+            BMatricesType, ShapeMatricesTypeDisplacement, DisplacementDim>>>
         _ip_data;
 
     std::vector<double> _material_forces;
