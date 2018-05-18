@@ -71,6 +71,9 @@
 #ifdef OGS_BUILD_PROCESS_SMALLDEFORMATIONNONLOCAL
 #include "ProcessLib/SmallDeformationNonlocal/CreateSmallDeformationNonlocalProcess.h"
 #endif
+#ifdef OGS_BUILD_PROCESS_SMALLDEFORMATIONNONLOCALHYDROMECHANICS
+#include "ProcessLib/SmallDeformationNonlocalHydroMechanics/CreateSmallDeformationNonlocalHydroMechanicsProcess.h"
+#endif
 #ifdef OGS_BUILD_PROCESS_TES
 #include "ProcessLib/TES/CreateTESProcess.h"
 #endif

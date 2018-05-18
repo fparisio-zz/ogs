@@ -1,0 +1,74 @@
+/**
+ * \copyright
+ * Copyright (c) 2012-2017, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
+#pragma once
+
+#include <memory>
+#include <utility>
+
+namespace MeshLib
+{
+class Element;
+}
+
+namespace ProcessLib
+{
+namespace SmallDeformationNonlocalHydroMechanics
+{
+template <int DisplacementDim>
+struct SmallDeformationNonlocalHydroMechanicsProcessData
+{
+    SmallDeformationNonlocalHydroMechanicsProcessData(
+        std::unique_ptr<MaterialLib::Solids::MechanicsBase<DisplacementDim>>&&
+            material,
+        double const internal_length_)
+        : material{std::move(material)},
+          internal_length_squared(internal_length_ * internal_length_)
+    {
+    }
+
+    SmallDeformationNonlocalHydroMechanicsProcessData(
+        SmallDeformationNonlocalHydroMechanicsProcessData&& other)
+        : material{std::move(other.material)},
+          dt{other.dt},
+          t{other.t},
+          internal_length_squared{other.internal_length_squared}
+    {
+    }
+
+    //! Copies are forbidden.
+    SmallDeformationNonlocalHydroMechanicsProcessData(
+        SmallDeformationNonlocalHydroMechanicsProcessData const&) = delete;
+
+    //! Assignments are not needed.
+    void operator=(SmallDeformationNonlocalHydroMechanicsProcessData const&) = delete;
+
+    //! Assignments are not needed.
+    void operator=(SmallDeformationNonlocalHydroMechanicsProcessData&&) = delete;
+
+    std::unique_ptr<MaterialLib::Solids::MechanicsBase<DisplacementDim>>
+        material;
+    double dt = 0;
+    double t = 0;
+    double const internal_length_squared;
+
+    double injected_volume = 0.0;
+    double crack_volume_old = 0.0;
+    double crack_volume = 0.0;
+    bool propagating_crack = true;
+
+    double stiffness = 2.15e11;
+
+    double pressure = 0.0;
+    double pressure_old = 0.0;
+    double pressure_error = 0.0;
+};
+
+}  // namespace SmallDeformationNonlocalHydroMechanics
+}  // namespace ProcessLib
