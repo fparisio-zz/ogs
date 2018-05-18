@@ -555,6 +555,34 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config,
         }
         else
 #endif
+#ifdef OGS_BUILD_PROCESS_SMALLDEFORMATIONNONLOCAL_HYDROMECHANICS
+            if (type == "SMALL_DEFORMATION_NONLOCAL_HYDROMECHANICS")
+        {
+            //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION_NONLOCAL__dimension}
+            switch (process_config.getConfigParameter<int>("dimension"))
+            {
+                case 2:
+                    process = ProcessLib::SmallDeformationNonlocalHydroMechanics::
+                        createSmallDeformationNonlocalHydroMechanicsProcess<2>(
+                            *_mesh_vec[0], std::move(jacobian_assembler),
+                            _process_variables, _parameters, integration_order,
+                            process_config);
+                    break;
+                case 3:
+                    process = ProcessLib::SmallDeformationNonlocalHydroMechanics::
+                        createSmallDeformationNonlocalHydroMechanicsProcess<3>(
+                            *_mesh_vec[0], std::move(jacobian_assembler),
+                            _process_variables, _parameters, integration_order,
+                            process_config);
+                    break;
+                default:
+                    OGS_FATAL(
+                        "SMALL_DEFORMATION_NONLOCAL_HYDROMECHANICS process does not support "
+                        "given dimension");
+            }
+        }
+        else
+#endif
 #ifdef OGS_BUILD_PROCESS_LIE
             if (type == "SMALL_DEFORMATION_WITH_LIE")
         {
