@@ -89,10 +89,17 @@ void SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::
                               MeshLib::Mesh const& mesh,
                               unsigned const integration_order)
 {
+    const int mechanical_process_id = _use_monolithic_scheme ? 0 : 1;
+    const int deformation_variable_id = _use_monolithic_scheme ? 1 : 0;
     ProcessLib::SmallDeformationNonlocalHydroMechanics::createLocalAssemblers<
         DisplacementDim, SmallDeformationNonlocalHydroMechanicsLocalAssembler>(
-        mesh.getElements(), dof_table, _local_assemblers,
-        mesh.isAxiallySymmetric(), integration_order, _process_data);
+                mesh.getDimension(), mesh.getElements(), dof_table,
+                // use displacement process variable to set shape function order
+                getProcessVariables(mechanical_process_id)[deformation_variable_id]
+                    .get()
+                    .getShapeFunctionOrder(),
+                _local_assemblers, mesh.isAxiallySymmetric(), integration_order,
+                _process_data);
 
     // TODO move the two data members somewhere else.
     // for extrapolation of secondary variables
