@@ -92,7 +92,7 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
             "Number of components of the process variable '%s' is different "
             "from the displacement dimension: got %d, expected %d",
             variable_u->getName().c_str(),
-            variable_u->getNumberOfComponents(),ts(),
+            variable_u->getNumberOfComponents(),
             DisplacementDim);
     }
 
@@ -190,6 +190,32 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
         "porosity", parameters, 1);
     DBUG("Use \'%s\' as porosity parameter.", porosity.name.c_str());
 
+    // Solid density
+    auto& solid_density = findParameter<double>(
+        config,
+        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__solid_density}
+        "solid_density", parameters, 1);
+    DBUG("Use \'%s\' as solid density parameter.", solid_density.name.c_str());
+
+    // Specific body force
+    Eigen::Matrix<double, DisplacementDim, 1> specific_body_force;
+    {
+        std::vector<double> const b =
+            //! \ogs_file_param{prj__processes__process__HYDRO_MECHANICS__specific_body_force}
+            config.getConfigParameter<std::vector<double>>(
+                "specific_body_force");
+        if (b.size() != DisplacementDim)
+        {
+            OGS_FATAL(
+                "The size of the specific body force vector does not match the "
+                "displacement dimension. Vector size is %d, displacement "
+                "dimension is %d",
+                b.size(), DisplacementDim);
+        }
+
+        std::copy_n(b.data(), b.size(), specific_body_force.data());
+    }
+
     auto const internal_length =
         //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION__internal_length}
         config.getConfigParameter<double>("internal_length");
@@ -217,7 +243,7 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     return std::make_unique<SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>>(
         mesh, std::move(jacobian_assembler), parameters, integration_order,
         std::move(process_variables), std::move(process_data),
-        std::move(secondary_variables), std::move(named_function_caller, use_monolithic_scheme));
+        std::move(secondary_variables), std::move(named_function_caller));
 }
 
 template std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess<2>(
