@@ -221,7 +221,7 @@ private:
 
     template <typename ShapeFunctionDisplacement,
               typename ShapeFunctionPressure>
-    using LAData = HydroMechanicsLocalAssembler<
+    using LAData = SmallDeformationNonlocalHydroMechanicsLocalAssembler<
         ShapeFunctionDisplacement, ShapeFunctionPressure,
         IntegrationMethod<ShapeFunctionDisplacement>, GlobalDim>;
 
