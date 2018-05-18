@@ -54,12 +54,12 @@ class SmallDeformationNonlocalLocalAssembler
 {
 public:
     static int const DisplacementDim = DisplacementDim_;
-    using ShapeMatricesType =
+    using ShapeMatricesTypeDisplacement =
         ShapeMatrixPolicyType<ShapeFunction, DisplacementDim>;
-    using NodalMatrixType = typename ShapeMatricesType::NodalMatrixType;
-    using NodalVectorType = typename ShapeMatricesType::NodalVectorType;
-    using GlobalDimVectorType = typename ShapeMatricesType::GlobalDimVectorType;
-    using ShapeMatrices = typename ShapeMatricesType::ShapeMatrices;
+    using NodalMatrixType = typename ShapeMatricesTypeDisplacement::NodalMatrixType;
+    using NodalVectorType = typename ShapeMatricesTypeDisplacement::NodalVectorType;
+    using GlobalDimVectorType = typename ShapeMatricesTypeDisplacement::GlobalDimVectorType;
+    using ShapeMatrices = typename ShapeMatricesTypeDisplacement::ShapeMatrices;
     using BMatricesType = BMatrixPolicyType<ShapeFunction, DisplacementDim>;
 
     using BMatrixType = typename BMatricesType::BMatrixType;
@@ -97,7 +97,7 @@ public:
         _material_forces.resize(DisplacementDim * ShapeFunction::NPOINTS);
 
         auto const shape_matrices =
-            initShapeMatrices<ShapeFunction, ShapeMatricesType,
+            initShapeMatrices<ShapeFunction, ShapeMatricesTypeDisplacement,
                               IntegrationMethod, DisplacementDim>(
                 e, is_axially_symmetric, _integration_method);
 
@@ -290,7 +290,7 @@ public:
     }
 
     // TODO (naumov) is this the same as the
-    // interpolateXCoordinate<ShapeFunction, ShapeMatricesType>(_element, N) ???
+    // interpolateXCoordinate<ShapeFunction, ShapeMatricesTypeDisplacement>(_element, N) ???
     // NO, it is indeed only X-coordinate
     Eigen::Vector3d getSingleIntegrationPointCoordinates(
         int integration_point) const
@@ -372,7 +372,7 @@ public:
             //          << "\n";
 
             auto const x_coord =
-                interpolateXCoordinate<ShapeFunction, ShapeMatricesType>(
+                interpolateXCoordinate<ShapeFunction, ShapeMatricesTypeDisplacement>(
                     _element, N);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunction::NPOINTS,
@@ -541,7 +541,7 @@ public:
             auto const& dNdx = _ip_data[ip].dNdx;
 
             auto const x_coord =
-                interpolateXCoordinate<ShapeFunction, ShapeMatricesType>(
+                interpolateXCoordinate<ShapeFunction, ShapeMatricesTypeDisplacement>(
                     _element, N);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunction::NPOINTS,
@@ -693,7 +693,7 @@ public:
             auto const& d = _ip_data[ip].damage;
 
             auto const& x_coord =
-                interpolateXCoordinate<ShapeFunction, ShapeMatricesType>(
+                interpolateXCoordinate<ShapeFunction, ShapeMatricesTypeDisplacement>(
                     _element, N);
             GradientMatrixType G(DisplacementDim * DisplacementDim +
                                      (DisplacementDim == 2 ? 1 : 0),
@@ -715,7 +715,7 @@ public:
         std::vector<double>& nodal_values) override
     {
         return ProcessLib::SmallDeformation::getMaterialForces<
-            DisplacementDim, ShapeFunction, ShapeMatricesType,
+            DisplacementDim, ShapeFunction, ShapeMatricesTypeDisplacement,
             typename BMatricesType::NodalForceVectorType,
             NodalDisplacementVectorType, GradientVectorType,
             GradientMatrixType>(local_x, nodal_values, _integration_method,
@@ -753,7 +753,7 @@ public:
             auto const& dNdx = _ip_data[ip].dNdx;
 
             auto const x_coord =
-                interpolateXCoordinate<ShapeFunction, ShapeMatricesType>(
+                interpolateXCoordinate<ShapeFunction, ShapeMatricesTypeDisplacement>(
                     _element, N);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunction::NPOINTS,
@@ -1028,9 +1028,9 @@ private:
     SmallDeformationNonlocalProcessData<DisplacementDim>& _process_data;
 
     std::vector<
-        IntegrationPointData<BMatricesType, ShapeMatricesType, DisplacementDim>,
+        IntegrationPointData<BMatricesType, ShapeMatricesTypeDisplacement, DisplacementDim>,
         Eigen::aligned_allocator<IntegrationPointData<
-            BMatricesType, ShapeMatricesType, DisplacementDim>>>
+            BMatricesType, ShapeMatricesTypeDisplacement, DisplacementDim>>>
         _ip_data;
 
     std::vector<double> _material_forces;
