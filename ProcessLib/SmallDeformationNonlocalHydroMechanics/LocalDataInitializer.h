@@ -1,6 +1,6 @@
 /**
  * \copyright
- * Copyright (c) 2012-2017, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2018, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -18,9 +18,9 @@
 
 #include "MeshLib/Elements/Elements.h"
 #include "NumLib/DOF/LocalToGlobalIndexMap.h"
+#include "NumLib/Fem/FiniteElement/LowerDimShapeTable.h"
 #include "NumLib/Fem/Integration/GaussLegendreIntegrationPolicy.h"
 #include "NumLib/Fem/Integration/GaussLobattoIntegrationPolicy.h"
-#include "NumLib/Fem/FiniteElement/LowerDimShapeTable.h"
 
 #ifndef OGS_MAX_ELEMENT_DIM
 static_assert(false, "The macro OGS_MAX_ELEMENT_DIM is undefined.");
@@ -113,6 +113,10 @@ namespace SmallDeformationNonlocalHydroMechanics
 /// initialization of the new local assembler data.
 /// For example for MeshLib::Quad a local assembler data with template argument
 /// NumLib::ShapeQuad4 is created.
+///
+/// \attention This is modified version of the ProcessLib::LocalDataInitializer
+/// class which does not include line elements, allows only shapefunction of
+/// order 2.
 template <typename LocalAssemblerInterface,
           template <typename, typename, typename, int>
           class SmallDeformationNonlocalHydroMechanicsLocalAssembler,
@@ -122,9 +126,8 @@ class LocalDataInitializer final
 public:
     using LADataIntfPtr = std::unique_ptr<LocalAssemblerInterface>;
 
-    LocalDataInitializer(
-        NumLib::LocalToGlobalIndexMap const& dof_table,
-            const unsigned shapefunction_order)
+    LocalDataInitializer(NumLib::LocalToGlobalIndexMap const& dof_table,
+                         const unsigned shapefunction_order)
         : _dof_table(dof_table)
     {
         if (shapefunction_order != 2)
@@ -132,7 +135,7 @@ public:
                 "The given shape function order %d is not supported.\nOnly "
                 "shape functions of order 2 are supported.",
                 shapefunction_order);
-// /// Quads and Hexahedra ///////////////////////////////////
+            // /// Quads and Hexahedra ///////////////////////////////////
 
 #if (OGS_ENABLED_ELEMENTS & ENABLED_ELEMENT_TYPE_QUAD) != 0 && \
     OGS_MAX_ELEMENT_DIM >= 2 && OGS_MAX_ELEMENT_ORDER >= 2
@@ -148,7 +151,7 @@ public:
             makeLocalAssemblerBuilder<NumLib::ShapeHex20>();
 #endif
 
-// /// Simplices ////////////////////////////////////////////////
+        // /// Simplices ////////////////////////////////////////////////
 
 #if (OGS_ENABLED_ELEMENTS & ENABLED_ELEMENT_TYPE_TRI) != 0 && \
     OGS_MAX_ELEMENT_DIM >= 2 && OGS_MAX_ELEMENT_ORDER >= 2
@@ -162,7 +165,7 @@ public:
             makeLocalAssemblerBuilder<NumLib::ShapeTet10>();
 #endif
 
-// /// Prisms ////////////////////////////////////////////////////
+        // /// Prisms ////////////////////////////////////////////////////
 
 #if (OGS_ENABLED_ELEMENTS & ENABLED_ELEMENT_TYPE_PRISM) != 0 && \
     OGS_MAX_ELEMENT_DIM >= 3 && OGS_MAX_ELEMENT_ORDER >= 2
@@ -170,7 +173,7 @@ public:
             makeLocalAssemblerBuilder<NumLib::ShapePrism15>();
 #endif
 
-// /// Pyramids //////////////////////////////////////////////////
+        // /// Pyramids //////////////////////////////////////////////////
 
 #if (OGS_ENABLED_ELEMENTS & ENABLED_ELEMENT_TYPE_PYRAMID) != 0 && \
     OGS_MAX_ELEMENT_DIM >= 3 && OGS_MAX_ELEMENT_ORDER >= 2
@@ -233,7 +236,8 @@ private:
     {
         return makeLocalAssemblerBuilder<ShapeFunctionDisplacement>(
             static_cast<std::integral_constant<
-                bool, (GlobalDim >= ShapeFunctionDisplacement::DIM)>*>(nullptr));
+                bool, (GlobalDim >= ShapeFunctionDisplacement::DIM)>*>(
+                nullptr));
     }
 
     /// Mapping of element types to local assembler constructors.
@@ -244,6 +248,7 @@ private:
     // local assembler builder implementations.
 private:
     /// Generates a function that creates a new LocalAssembler of type
+    /// LAData<ShapeFunctionDisplacement>. Only functions with shape function's
     /// LAData<ShapeFunction>. Only functions with shape function's dimension
     /// less or equal to the global dimension are instantiated, e.g.  following
     /// combinations of shape functions and global dimensions: (Line2, 1),
@@ -254,14 +259,13 @@ private:
         // (Lower order elements = Order(ShapeFunctionDisplacement) - 1).
         using ShapeFunctionPressure =
             typename NumLib::LowerDim<ShapeFunctionDisplacement>::type;
-
         return [](MeshLib::Element const& e,
                   std::size_t const local_matrix_size,
                   ConstructorArgs&&... args) {
             return LADataIntfPtr{
-                            new LAData<ShapeFunctionDisplacement, ShapeFunctionPressure>{
-                                e, local_matrix_size,
-                                std::forward<ConstructorArgs>(args)...}};
+                new LAData<ShapeFunctionDisplacement, ShapeFunctionPressure>{
+                    e, local_matrix_size,
+                    std::forward<ConstructorArgs>(args)...}};
         };
     }
 
@@ -274,7 +278,7 @@ private:
     }
 };
 
-}
+}  // namespace SmallDeformationNonlocalHydroMechanics
 }  // namespace ProcessLib
 
 #undef ENABLED_ELEMENT_TYPE_SIMPLEX

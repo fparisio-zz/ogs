@@ -63,9 +63,9 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
         auto per_process_variables = findProcessVariables(
             variables, pv_config,
             {//! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__process_variables__pressure}
-            "pressure",
-            //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__process_variables__displacement}
-            "displacement"});
+             "pressure",
+             //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__process_variables__displacement}
+             "displacement"});
         variable_p = &per_process_variables[0].get();
         variable_u = &per_process_variables[1].get();
         process_variables.push_back(std::move(per_process_variables));
@@ -220,17 +220,17 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
         //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION__internal_length}
         config.getConfigParameter<double>("internal_length");
 
-    SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim> process_data{
-        std::move(material),
-                intrinsic_permeability,
-                specific_storage,
-                fluid_viscosity,
-                fluid_density,
-                biot_coefficient,
-                porosity,
-                solid_density,
-                specific_body_force,
-                internal_length};
+    SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>
+        process_data{std::move(material),
+                     intrinsic_permeability,
+                     specific_storage,
+                     fluid_viscosity,
+                     fluid_density,
+                     biot_coefficient,
+                     porosity,
+                     solid_density,
+                     specific_body_force,
+                     internal_length};
 
     SecondaryVariableCollection secondary_variables;
 
@@ -240,13 +240,15 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     ProcessLib::createSecondaryVariables(config, secondary_variables,
                                          named_function_caller);
 
-    return std::make_unique<SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>>(
+    return std::make_unique<
+        SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>>(
         mesh, std::move(jacobian_assembler), parameters, integration_order,
         std::move(process_variables), std::move(process_data),
         std::move(secondary_variables), std::move(named_function_caller));
 }
 
-template std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess<2>(
+template std::unique_ptr<Process>
+createSmallDeformationNonlocalHydroMechanicsProcess<2>(
     MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<ProcessVariable> const& variables,
@@ -254,7 +256,8 @@ template std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsPr
     unsigned const integration_order,
     BaseLib::ConfigTree const& config);
 
-template std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess<3>(
+template std::unique_ptr<Process>
+createSmallDeformationNonlocalHydroMechanicsProcess<3>(
     MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<ProcessVariable> const& variables,

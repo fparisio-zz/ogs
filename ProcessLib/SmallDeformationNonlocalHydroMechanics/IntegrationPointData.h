@@ -15,8 +15,8 @@ namespace ProcessLib
 {
 namespace SmallDeformationNonlocalHydroMechanics
 {
-template <typename BMatricesType, typename ShapeMatricesTypeDisplacement, typename ShapeMatricesTypePressure,
-          int DisplacementDim>
+template <typename BMatricesType, typename ShapeMatricesTypeDisplacement,
+          typename ShapeMatricesTypePressure, int DisplacementDim>
 struct IntegrationPointData final : public IntegrationPointDataNonlocalInterface
 {
     explicit IntegrationPointData(
@@ -59,8 +59,8 @@ struct IntegrationPointData final : public IntegrationPointDataNonlocalInterface
     typename BMatricesType::KelvinVectorType sigma, sigma_prev;
     typename BMatricesType::KelvinVectorType eps, eps_prev;
     double free_energy_density = 0;
-    double damage = 0;       ///< isotropic damage
-    double damage_prev = 0;  ///< \copydoc damage
+    double damage = 0;        ///< isotropic damage
+    double damage_prev = 0;   ///< \copydoc damage
     double kappa_d_prev = 0;  ///< \copydoc kappa_d
     // double nonlocal_kappa_d = 0;
     // double nonlocal_kappa_d_prev = 0;
@@ -92,7 +92,8 @@ struct IntegrationPointData final : public IntegrationPointDataNonlocalInterface
         material_state_variables->pushBackState();
     }
 
-    // Unused double getLocalRateKappaD() const { return kappa_d - kappa_d_prev; }
+    // Unused double getLocalRateKappaD() const { return kappa_d - kappa_d_prev;
+    // }
 };
 
 }  // namespace SmallDeformationNonlocalHydroMechanics

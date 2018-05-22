@@ -9,8 +9,8 @@
 
 #include "SmallDeformationNonlocalHydroMechanicsProcess.h"
 
-#include <nlohmann/json.hpp>
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 namespace ProcessLib
 {
@@ -26,7 +26,8 @@ SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::
         unsigned const integration_order,
         std::vector<std::vector<std::reference_wrapper<ProcessVariable>>>&&
             process_variables,
-        SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>&& process_data,
+        SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>&&
+            process_data,
         SecondaryVariableCollection&& secondary_variables,
         NumLib::NamedFunctionCaller&& named_function_caller)
     : Process(mesh, std::move(jacobian_assembler), parameters,
@@ -78,7 +79,8 @@ SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::
 }
 
 template <int DisplacementDim>
-bool SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::isLinear() const
+bool SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::isLinear()
+    const
 {
     return false;
 }
@@ -93,13 +95,13 @@ void SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::
     const int deformation_variable_id = _use_monolithic_scheme ? 1 : 0;
     ProcessLib::SmallDeformationNonlocalHydroMechanics::createLocalAssemblers<
         DisplacementDim, SmallDeformationNonlocalHydroMechanicsLocalAssembler>(
-                mesh.getDimension(), mesh.getElements(), dof_table,
-                // use displacement process variable to set shape function order
-                getProcessVariables(mechanical_process_id)[deformation_variable_id]
-                    .get()
-                    .getShapeFunctionOrder(),
-                _local_assemblers, mesh.isAxiallySymmetric(), integration_order,
-                _process_data);
+        mesh.getDimension(), mesh.getElements(), dof_table,
+        // use displacement process variable to set shape function order
+        getProcessVariables(mechanical_process_id)[deformation_variable_id]
+            .get()
+            .getShapeFunctionOrder(),
+        _local_assemblers, mesh.isAxiallySymmetric(), integration_order,
+        _process_data);
 
     // TODO move the two data members somewhere else.
     // for extrapolation of secondary variables
@@ -157,7 +159,6 @@ void SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::
                 GlobalVector const& /*current_solution*/,
                 NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
                 std::vector<double>& cache) -> std::vector<double> const& {
-
                 const unsigned num_int_pts =
                     loc_asm.getNumberOfIntegrationPoints();
 
@@ -193,7 +194,6 @@ void SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::
     GlobalExecutor::executeMemberOnDereferenced(
         &LocalAssemblerInterface::nonlocal, _local_assemblers,
         _local_assemblers);
-
 
     // Set initial conditions for integration point data.
     for (auto const& ip_writer : _integration_point_writer)
@@ -276,9 +276,11 @@ void SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::
 }
 
 template <int DisplacementDim>
-void SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::assembleConcreteProcess(
-    const double t, GlobalVector const& x, GlobalMatrix& M, GlobalMatrix& K,
-    GlobalVector& b)
+void SmallDeformationNonlocalHydroMechanicsProcess<
+    DisplacementDim>::assembleConcreteProcess(const double t,
+                                              GlobalVector const& x,
+                                              GlobalMatrix& M, GlobalMatrix& K,
+                                              GlobalVector& b)
 {
     DBUG("Assemble SmallDeformationNonlocalHydroMechanicsProcess.");
 
@@ -359,9 +361,8 @@ void SmallDeformationNonlocalHydroMechanicsProcess<
 }
 
 template <int DisplacementDim>
-NumLib::IterationResult
-SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::postIterationConcreteProcess(
-    GlobalVector const& x)
+NumLib::IterationResult SmallDeformationNonlocalHydroMechanicsProcess<
+    DisplacementDim>::postIterationConcreteProcess(GlobalVector const& x)
 {
     _process_data.crack_volume_old = _process_data.crack_volume;
     _process_data.crack_volume = 0.0;
@@ -379,14 +380,14 @@ SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::postIterationCon
     {
         _process_data.pressure_old = _process_data.pressure;
         _process_data.pressure +=
-                (_process_data.injected_volume - _process_data.crack_volume)*_process_data.stiffness;
+            (_process_data.injected_volume - _process_data.crack_volume) *
+            _process_data.stiffness;
 
         _process_data.pressure_error =
-            _process_data.pressure == 0
-                ? 0
-                : std::abs(_process_data.pressure_old -
-                           _process_data.pressure) /
-                           _process_data.pressure;
+            _process_data.pressure == 0 ? 0
+                                        : std::abs(_process_data.pressure_old -
+                                                   _process_data.pressure) /
+                                              _process_data.pressure;
 
         //_process_data.stiffness *= _process_data.pressure_error;
 
@@ -395,8 +396,8 @@ SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::postIterationCon
 
         // TODO (parisio) Is this correct?
         // Update displacement field
-        //assert(_coupled_solutions == nullptr);
-        //MathLib::LinAlg::scale(const_cast<GlobalVector&>(x),
+        // assert(_coupled_solutions == nullptr);
+        // MathLib::LinAlg::scale(const_cast<GlobalVector&>(x),
         //                       _process_data.pressure);
     }
 
@@ -405,7 +406,6 @@ SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::postIterationCon
     {
         // return NumLib::IterationResult::REPEAT_ITERATION;
     }
-
 
     return NumLib::IterationResult::SUCCESS;
 }

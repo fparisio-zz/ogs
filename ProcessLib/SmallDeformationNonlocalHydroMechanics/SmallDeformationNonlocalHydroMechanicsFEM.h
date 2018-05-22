@@ -47,10 +47,11 @@ struct SecondaryData
     std::vector<ShapeMatrixType, Eigen::aligned_allocator<ShapeMatrixType>> N_u;
 };
 
-template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure, typename IntegrationMethod,
-          int DisplacementDim_>
+template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure,
+          typename IntegrationMethod, int DisplacementDim_>
 class SmallDeformationNonlocalHydroMechanicsLocalAssembler
-    : public SmallDeformationNonlocalHydroMechanicsLocalAssemblerInterface<DisplacementDim_>
+    : public SmallDeformationNonlocalHydroMechanicsLocalAssemblerInterface<
+          DisplacementDim_>
 {
 public:
     static int const DisplacementDim = DisplacementDim_;
@@ -59,11 +60,15 @@ public:
     using ShapeMatricesTypePressure =
         ShapeMatrixPolicyType<ShapeFunctionPressure, DisplacementDim>;
 
-    using NodalMatrixType = typename ShapeMatricesTypeDisplacement::NodalMatrixType;
-    using NodalVectorType = typename ShapeMatricesTypeDisplacement::NodalVectorType;
-    using GlobalDimVectorType = typename ShapeMatricesTypeDisplacement::GlobalDimVectorType;
+    using NodalMatrixType =
+        typename ShapeMatricesTypeDisplacement::NodalMatrixType;
+    using NodalVectorType =
+        typename ShapeMatricesTypeDisplacement::NodalVectorType;
+    using GlobalDimVectorType =
+        typename ShapeMatricesTypeDisplacement::GlobalDimVectorType;
     using ShapeMatrices = typename ShapeMatricesTypeDisplacement::ShapeMatrices;
-    using BMatricesType = BMatrixPolicyType<ShapeFunctionDisplacement, DisplacementDim>;
+    using BMatricesType =
+        BMatrixPolicyType<ShapeFunctionDisplacement, DisplacementDim>;
 
     using BMatrixType = typename BMatricesType::BMatrixType;
     using StiffnessMatrixType = typename BMatricesType::StiffnessMatrixType;
@@ -71,7 +76,8 @@ public:
     using NodalDisplacementVectorType =
         typename BMatricesType::NodalForceVectorType;
 
-    using GMatricesType = GMatrixPolicyType<ShapeFunctionDisplacement, DisplacementDim>;
+    using GMatricesType =
+        GMatrixPolicyType<ShapeFunctionDisplacement, DisplacementDim>;
     using GradientVectorType = typename GMatricesType::GradientVectorType;
     using GradientMatrixType = typename GMatricesType::GradientMatrixType;
 
@@ -85,7 +91,8 @@ public:
         std::size_t const /*local_matrix_size*/,
         bool const is_axially_symmetric,
         unsigned const integration_order,
-        SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>& process_data)
+        SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>&
+            process_data)
         : _process_data(process_data),
           _integration_method(integration_order),
           _element(e),
@@ -97,7 +104,8 @@ public:
         _ip_data.reserve(n_integration_points);
         _secondary_data.N_u.resize(n_integration_points);
         // TODO (naumov) This is compile-time size. Use eigen matrix.
-        _material_forces.resize(DisplacementDim * ShapeFunctionDisplacement::NPOINTS);
+        _material_forces.resize(DisplacementDim *
+                                ShapeFunctionDisplacement::NPOINTS);
 
         auto const shape_matrices_u =
             initShapeMatrices<ShapeFunctionDisplacement,
@@ -143,8 +151,8 @@ public:
     }
 
     std::size_t setIPDataInitialConditions(std::string const& name,
-                                    double const* values,
-                                    int const integration_order) override
+                                           double const* values,
+                                           int const integration_order) override
     {
         if (integration_order !=
             static_cast<int>(_integration_method.getIntegrationOrder()))
@@ -196,8 +204,8 @@ public:
 
     void nonlocal(
         std::size_t const /*mesh_item_id*/,
-        std::vector<
-            std::unique_ptr<SmallDeformationNonlocalHydroMechanicsLocalAssemblerInterface<
+        std::vector<std::unique_ptr<
+            SmallDeformationNonlocalHydroMechanicsLocalAssemblerInterface<
                 DisplacementDim>>> const& local_assemblers) override
     {
         // std::cout << "\nXXX nonlocal in element " << _element.getID() <<
@@ -249,7 +257,6 @@ public:
                 _ip_data[k].ip_l_pointer.size();
             for (std::size_t i = 0; i < non_local_assemblers_size; ++i)
             {
-
                 double const distance2_m = _ip_data[k].distances2[i];
 
                 auto const& w_m =
@@ -345,7 +352,8 @@ public:
                   std::vector<double>& /*local_rhs_data*/) override
     {
         OGS_FATAL(
-            "SmallDeformationNonlocalHydroMechanicsLocalAssembler: assembly without jacobian "
+            "SmallDeformationNonlocalHydroMechanicsLocalAssembler: assembly "
+            "without jacobian "
             "is not "
             "implemented.");
     }
@@ -381,8 +389,9 @@ public:
             //          << "\n";
 
             auto const x_coord =
-                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
-                    _element, N_u);
+                interpolateXCoordinate<ShapeFunctionDisplacement,
+                                       ShapeMatricesTypeDisplacement>(_element,
+                                                                      N_u);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunctionDisplacement::NPOINTS,
                 typename BMatricesType::BMatrixType>(dNdx_u, N_u, x_coord,
@@ -399,7 +408,8 @@ public:
             eps.noalias() =
                 B *
                 Eigen::Map<typename BMatricesType::NodalForceVectorType const>(
-                    local_x.data(), ShapeFunctionDisplacement::NPOINTS * DisplacementDim);
+                    local_x.data(),
+                    ShapeFunctionDisplacement::NPOINTS * DisplacementDim);
 
             // sigma is for plastic part only.
             std::unique_ptr<
@@ -415,8 +425,8 @@ public:
                 sigma_prev / (1. - damage_prev);
 
             auto&& solution = _ip_data[ip].solid_material.integrateStress(
-                t, x_position, _process_data.dt, eps_prev, eps, sigma_eff_dam_prev,
-                *state);
+                t, x_position, _process_data.dt, eps_prev, eps,
+                sigma_eff_dam_prev, *state);
 
             if (!solution)
                 OGS_FATAL("Computation of local constitutive relation failed.");
@@ -463,7 +473,7 @@ public:
         // Compute material forces, needed in the non-local assembly, storing
         // them locally and interpolating them to integration points.
         // TODO using ip_data.N instead of ip_data.N_u
-        //getMaterialForces(local_x, _material_forces);
+        // getMaterialForces(local_x, _material_forces);
         /* TODO_MATERIAL_FORCES Currently the interpolation is not needed.
         for (unsigned ip = 0; ip < n_integration_points; ip++)
         {
@@ -498,22 +508,23 @@ public:
 
         assert(local_x.size() == pressure_size + displacement_size);
 
-        auto p = Eigen::Map<typename ShapeMatricesTypePressure::template VectorType<
-            pressure_size> const>(local_x.data() + pressure_index, pressure_size);
+        auto p =
+            Eigen::Map<typename ShapeMatricesTypePressure::template VectorType<
+                pressure_size> const>(local_x.data() + pressure_index,
+                                      pressure_size);
 
-        auto u =
-            Eigen::Map<typename ShapeMatricesTypeDisplacement::template VectorType<
-                displacement_size> const>(local_x.data() + displacement_index,
-                                          displacement_size);
+        auto u = Eigen::Map<typename ShapeMatricesTypeDisplacement::
+                                template VectorType<displacement_size> const>(
+            local_x.data() + displacement_index, displacement_size);
 
         auto p_dot =
             Eigen::Map<typename ShapeMatricesTypePressure::template VectorType<
                 pressure_size> const>(local_xdot.data() + pressure_index,
                                       pressure_size);
         auto u_dot =
-            Eigen::Map<typename ShapeMatricesTypeDisplacement::template VectorType<
-                displacement_size> const>(local_xdot.data() + displacement_index,
-                                          displacement_size);
+            Eigen::Map<typename ShapeMatricesTypeDisplacement::
+                           template VectorType<displacement_size> const>(
+                local_xdot.data() + displacement_index, displacement_size);
 
         auto local_Jac = MathLib::createZeroedMatrix<
             typename ShapeMatricesTypeDisplacement::template MatrixType<
@@ -585,17 +596,18 @@ public:
             x_position.setIntegrationPoint(ip);
             auto const& w = _ip_data[ip].integration_weight;
 
-            //auto const& N_u_op = _ip_data[ip].N_u_op;
+            // auto const& N_u_op = _ip_data[ip].N_u_op;
 
             auto const& N_u = _ip_data[ip].N_u;
             auto const& dNdx_u = _ip_data[ip].dNdx_u;
 
-            //auto const& N_p = _ip_data[ip].N_p;
-            //auto const& dNdx_p = _ip_data[ip].dNdx_p;
+            // auto const& N_p = _ip_data[ip].N_p;
+            // auto const& dNdx_p = _ip_data[ip].dNdx_p;
 
             auto const x_coord =
-                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
-                    _element, N_u);
+                interpolateXCoordinate<ShapeFunctionDisplacement,
+                                       ShapeMatricesTypeDisplacement>(_element,
+                                                                      N_u);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunctionDisplacement::NPOINTS,
                 typename BMatricesType::BMatrixType>(dNdx_u, N_u, x_coord,
@@ -668,9 +680,9 @@ public:
                 {
                     double const gamma_nonlocal =
                         material.getOvernonlocalGammaFactor(t, x_position);
-                    nonlocal_kappa_d = (1. - gamma_nonlocal) *
-                                           _ip_data[ip].kappa_d +
-                                       gamma_nonlocal * nonlocal_kappa_d;
+                    nonlocal_kappa_d =
+                        (1. - gamma_nonlocal) * _ip_data[ip].kappa_d +
+                        gamma_nonlocal * nonlocal_kappa_d;
                 }
 
                 nonlocal_kappa_d = std::max(0., nonlocal_kappa_d);
@@ -684,9 +696,9 @@ public:
                 sigma = sigma * (1. - damage);
             }
 
-            //if (_process_data.crack_volume != 0)
+            // if (_process_data.crack_volume != 0)
 
-            //if (damage > 0)
+            // if (damage > 0)
             {
                 // double pressure = _process_data.pressure * damage;
                 // INFO("Pressure at effective stress: %.4e and sigma_prev %.4e
@@ -729,7 +741,8 @@ public:
         auto local_x = x.get(indices);
 
         auto u = Eigen::Map<typename BMatricesType::NodalForceVectorType const>(
-            local_x.data(), ShapeFunctionDisplacement::NPOINTS * DisplacementDim);
+            local_x.data(),
+            ShapeFunctionDisplacement::NPOINTS * DisplacementDim);
 
         int const n_integration_points =
             _integration_method.getNumberOfPoints();
@@ -746,11 +759,13 @@ public:
             auto const& d = _ip_data[ip].damage;
 
             auto const& x_coord =
-                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
-                    _element, N_u);
-            GradientMatrixType G(DisplacementDim * DisplacementDim +
-                                     (DisplacementDim == 2 ? 1 : 0),
-                                 DisplacementDim * ShapeFunctionDisplacement::NPOINTS);
+                interpolateXCoordinate<ShapeFunctionDisplacement,
+                                       ShapeMatricesTypeDisplacement>(_element,
+                                                                      N_u);
+            GradientMatrixType G(
+                DisplacementDim * DisplacementDim +
+                    (DisplacementDim == 2 ? 1 : 0),
+                DisplacementDim * ShapeFunctionDisplacement::NPOINTS);
             Deformation::computeGMatrix<DisplacementDim,
                                         ShapeFunctionDisplacement::NPOINTS>(
                 dNdx_u, G, _is_axially_symmetric, N_u, x_coord);
@@ -763,19 +778,19 @@ public:
         }
     }
 
-    //TODO fix material forces call
+    // TODO fix material forces call
     std::vector<double> const& getMaterialForces(
         std::vector<double> const& local_x,
         std::vector<double>& nodal_values) override
     {
         return nodal_values;
 
-                /*ProcessLib::SmallDeformation::getMaterialForces<
-            DisplacementDim, ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement,
-            typename BMatricesType::NodalForceVectorType,
-            NodalDisplacementVectorType, GradientVectorType,
-            GradientMatrixType>(local_x, nodal_values, _integration_method,
-                                _ip_data, _element, _is_axially_symmetric);*/
+        /*ProcessLib::SmallDeformation::getMaterialForces<
+    DisplacementDim, ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement,
+    typename BMatricesType::NodalForceVectorType,
+    NodalDisplacementVectorType, GradientVectorType,
+    GradientMatrixType>(local_x, nodal_values, _integration_method,
+                        _ip_data, _element, _is_axially_symmetric);*/
     }
 
     Eigen::Map<const Eigen::RowVectorXd> getShapeMatrix(
@@ -791,8 +806,10 @@ public:
         std::vector<double>& nodal_values) const override
     {
         nodal_values.clear();
-        auto local_rhs = MathLib::createZeroedVector<NodalDisplacementVectorType>(
-            nodal_values, ShapeFunctionDisplacement::NPOINTS * DisplacementDim);
+        auto local_rhs =
+            MathLib::createZeroedVector<NodalDisplacementVectorType>(
+                nodal_values,
+                ShapeFunctionDisplacement::NPOINTS * DisplacementDim);
 
         unsigned const n_integration_points =
             _integration_method.getNumberOfPoints();
@@ -809,8 +826,9 @@ public:
             auto const& dNdx_u = _ip_data[ip].dNdx_u;
 
             auto const x_coord =
-                interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
-                    _element, N_u);
+                interpolateXCoordinate<ShapeFunctionDisplacement,
+                                       ShapeMatricesTypeDisplacement>(_element,
+                                                                      N_u);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunctionDisplacement::NPOINTS,
                 typename BMatricesType::BMatrixType>(dNdx_u, N_u, x_coord,
@@ -1074,19 +1092,21 @@ private:
         return cache;
     }
 
-    IntegrationPointDataNonlocalInterface*
-    getIPDataPtr(int const ip) override
+    IntegrationPointDataNonlocalInterface* getIPDataPtr(int const ip) override
     {
         return &_ip_data[ip];
     }
 
 private:
-    SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>& _process_data;
+    SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>&
+        _process_data;
 
     std::vector<
-        IntegrationPointData<BMatricesType, ShapeMatricesTypeDisplacement, ShapeMatricesTypePressure,DisplacementDim>,
-        Eigen::aligned_allocator<IntegrationPointData<
-            BMatricesType, ShapeMatricesTypeDisplacement, ShapeMatricesTypePressure, DisplacementDim>>>
+        IntegrationPointData<BMatricesType, ShapeMatricesTypeDisplacement,
+                             ShapeMatricesTypePressure, DisplacementDim>,
+        Eigen::aligned_allocator<
+            IntegrationPointData<BMatricesType, ShapeMatricesTypeDisplacement,
+                                 ShapeMatricesTypePressure, DisplacementDim>>>
         _ip_data;
 
     std::vector<double> _material_forces;

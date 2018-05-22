@@ -36,7 +36,7 @@ struct SmallDeformationNonlocalHydroMechanicsProcessData
         Parameter<double> const& solid_density_,
         Eigen::Matrix<double, DisplacementDim, 1>
             specific_body_force_,
-            double const internal_length_)
+        double const internal_length_)
         : material{std::move(material_)},
           intrinsic_permeability(intrinsic_permeability_),
           specific_storage(specific_storage_),
@@ -50,7 +50,8 @@ struct SmallDeformationNonlocalHydroMechanicsProcessData
     {
     }
 
-    SmallDeformationNonlocalHydroMechanicsProcessData(SmallDeformationNonlocalHydroMechanicsProcessData&& other)
+    SmallDeformationNonlocalHydroMechanicsProcessData(
+        SmallDeformationNonlocalHydroMechanicsProcessData&& other)
         : material{std::move(other.material)},
           intrinsic_permeability(other.intrinsic_permeability),
           specific_storage(other.specific_storage),
@@ -71,10 +72,12 @@ struct SmallDeformationNonlocalHydroMechanicsProcessData
         SmallDeformationNonlocalHydroMechanicsProcessData const&) = delete;
 
     //! Assignments are not needed.
-    void operator=(SmallDeformationNonlocalHydroMechanicsProcessData const&) = delete;
+    void operator=(SmallDeformationNonlocalHydroMechanicsProcessData const&) =
+        delete;
 
     //! Assignments are not needed.
-    void operator=(SmallDeformationNonlocalHydroMechanicsProcessData&&) = delete;
+    void operator=(SmallDeformationNonlocalHydroMechanicsProcessData&&) =
+        delete;
 
     /// The constitutive relation for the mechanical part.
     /// \note Linear elasticity is the only supported one in the moment.

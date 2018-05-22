@@ -22,7 +22,7 @@ struct IntegrationPointDataNonlocalInterface
     std::vector<IntegrationPointDataNonlocalInterface*> ip_l_pointer;
     std::vector<double> alpha_kl_times_w_l;
 
-    double kappa_d = 0;      ///< damage driving variable.
+    double kappa_d = 0;  ///< damage driving variable.
     double integration_weight;
     /* TODO_MATERIAL_FORCES
     double nonlocal_internal_length;

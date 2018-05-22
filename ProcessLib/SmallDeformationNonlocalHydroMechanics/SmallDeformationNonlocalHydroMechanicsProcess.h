@@ -100,7 +100,8 @@ public:
         unsigned const integration_order,
         std::vector<std::vector<std::reference_wrapper<ProcessVariable>>>&&
             process_variables,
-        SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>&& process_data,
+        SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>&&
+            process_data,
         SecondaryVariableCollection&& secondary_variables,
         NumLib::NamedFunctionCaller&& named_function_caller);
 
@@ -139,10 +140,12 @@ private:
         GlobalVector const& x) override;
 
 private:
-    SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim> _process_data;
+    SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>
+        _process_data;
 
     using LocalAssemblerInterface =
-        SmallDeformationNonlocalHydroMechanicsLocalAssemblerInterface<DisplacementDim>;
+        SmallDeformationNonlocalHydroMechanicsLocalAssemblerInterface<
+            DisplacementDim>;
     std::vector<std::unique_ptr<LocalAssemblerInterface>> _local_assemblers;
 
     std::unique_ptr<NumLib::LocalToGlobalIndexMap>
@@ -158,5 +161,5 @@ extern template class ProcessLib::SmallDeformationNonlocalHydroMechanics::
 extern template class ProcessLib::SmallDeformationNonlocalHydroMechanics::
     SmallDeformationNonlocalHydroMechanicsProcess<3>;
 
-}  // namespace SmallDeformationNonlocal
+}  // namespace SmallDeformationNonlocalHydroMechanics
 }  // namespace ProcessLib
