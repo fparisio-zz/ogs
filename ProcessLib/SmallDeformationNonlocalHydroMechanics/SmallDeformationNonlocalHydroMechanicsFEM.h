@@ -535,6 +535,13 @@ public:
         SpatialPosition x_position;
         x_position.setElementID(_element.getID());
 
+        // TODO (parisio) Remove when variables are used.
+        (void)p;
+        (void)u;
+        (void)p_dot;
+        (void)u_dot;
+        (void)dt;
+
         /* TODO_MATERIAL_FORCES
         // Compute the non-local internal length depending on the material
         // forces and directions dir := x_ip - \xi:
@@ -761,7 +768,7 @@ public:
         std::vector<double> const& local_x,
         std::vector<double>& nodal_values) override
     {
-        return {};
+        return nodal_values;
 
                 /*ProcessLib::SmallDeformation::getMaterialForces<
             DisplacementDim, ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement,
