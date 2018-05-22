@@ -15,7 +15,7 @@ namespace ProcessLib
 {
 namespace SmallDeformationNonlocalHydroMechanics
 {
-template <typename BMatricesType, typename ShapeMatricesType,
+template <typename BMatricesType, typename ShapeMatricesTypeDisplacement, typename ShapeMatricesTypePressure,
           int DisplacementDim>
 struct IntegrationPointData final : public IntegrationPointDataNonlocalInterface
 {
@@ -71,8 +71,10 @@ struct IntegrationPointData final : public IntegrationPointDataNonlocalInterface
         material_state_variables;
 
     typename BMatricesType::KelvinMatrixType C;
-    typename ShapeMatricesType::NodalRowVectorType N;
-    typename ShapeMatricesType::GlobalDimNodalMatrixType dNdx;
+    typename ShapeMatricesTypeDisplacement::NodalRowVectorType N_u;
+    typename ShapeMatricesTypePressure::NodalRowVectorType N_p;
+    typename ShapeMatricesTypeDisplacement::GlobalDimNodalMatrixType dNdx_u;
+    typename ShapeMatricesTypePressure::GlobalDimNodalMatrixType dNdx_p;
 
     double const* eps_p_V;
     double const* eps_p_D_xx;

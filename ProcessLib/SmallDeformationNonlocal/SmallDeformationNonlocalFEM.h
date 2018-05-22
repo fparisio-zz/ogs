@@ -75,7 +75,7 @@ public:
     SmallDeformationNonlocalLocalAssembler(
         SmallDeformationNonlocalLocalAssembler const&) = delete;
     SmallDeformationNonlocalLocalAssembler(
-        SmallDeformationNonlocalLocalAssembler&&) = delete;
+        SmallDeformationNonlocalLocalAssembler&) = delete;
 
     SmallDeformationNonlocalLocalAssembler(
         MeshLib::Element const& e,

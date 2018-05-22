@@ -44,7 +44,7 @@ namespace SmallDeformationNonlocalHydroMechanics
 template <typename ShapeMatrixType>
 struct SecondaryData
 {
-    std::vector<ShapeMatrixType, Eigen::aligned_allocator<ShapeMatrixType>> N;
+    std::vector<ShapeMatrixType, Eigen::aligned_allocator<ShapeMatrixType>> N_u;
 };
 
 template <typename ShapeFunctionDisplacement, typename ShapeFunctionPressure, typename IntegrationMethod,
@@ -119,8 +119,8 @@ public:
                 _integration_method.getWeightedPoint(ip).getWeight() *
                 sm_u.integralMeasure * sm_u.detJ;
 
-            ip_data.N = sm_u.N;
-            ip_data.dNdx = sm_u.dNdx;
+            ip_data.N_u = sm_u.N;
+            ip_data.dNdx_u = sm_u.dNdx;
 
             // Initialize current time step values
             ip_data.sigma.setZero(MathLib::KelvinVector::KelvinVectorDimensions<
@@ -304,15 +304,15 @@ public:
     Eigen::Vector3d getSingleIntegrationPointCoordinates(
         int integration_point) const
     {
-        auto const& N = _secondary_data.N_u[integration_point];
+        auto const& N_u = _secondary_data.N_u[integration_point];
 
         Eigen::Vector3d xyz = Eigen::Vector3d::Zero();  // Resulting coordinates
         auto* nodes = _element.getNodes();
-        for (int i = 0; i < N.size(); ++i)
+        for (int i = 0; i < N_u.size(); ++i)
         {
             Eigen::Map<Eigen::Vector3d const> node_coordinates{
                 nodes[i]->getCoords(), 3};
-            xyz += node_coordinates * N[i];
+            xyz += node_coordinates * N_u[i];
         }
 
         // std::cout << "\t\t singleIPcoords: xyz = " << xyz[0] << " " << xyz[1]
@@ -373,8 +373,8 @@ public:
 
             x_position.setIntegrationPoint(ip);
 
-            auto const& N = _ip_data[ip].N;
-            auto const& dNdx = _ip_data[ip].dNdx;
+            auto const& N_u = _ip_data[ip].N_u;
+            auto const& dNdx_u = _ip_data[ip].dNdx_u;
 
             // std::cout << "\tCurrent ip_k coords : " <<
             // _ip_data[ip].coordinates
@@ -382,10 +382,10 @@ public:
 
             auto const x_coord =
                 interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
-                    _element, N);
+                    _element, N_u);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunctionDisplacement::NPOINTS,
-                typename BMatricesType::BMatrixType>(dNdx, N, x_coord,
+                typename BMatricesType::BMatrixType>(dNdx_u, N_u, x_coord,
                                                      _is_axially_symmetric);
             auto const& eps_prev = _ip_data[ip].eps_prev;
             auto const& sigma_prev = _ip_data[ip].sigma_prev;
@@ -462,7 +462,8 @@ public:
 
         // Compute material forces, needed in the non-local assembly, storing
         // them locally and interpolating them to integration points.
-        getMaterialForces(local_x, _material_forces);
+        // TODO using ip_data.N instead of ip_data.N_u
+        //getMaterialForces(local_x, _material_forces);
         /* TODO_MATERIAL_FORCES Currently the interpolation is not needed.
         for (unsigned ip = 0; ip < n_integration_points; ip++)
         {
@@ -577,13 +578,13 @@ public:
             x_position.setIntegrationPoint(ip);
             auto const& w = _ip_data[ip].integration_weight;
 
-            auto const& N_u_op = _ip_data[ip].N_u_op;
+            //auto const& N_u_op = _ip_data[ip].N_u_op;
 
             auto const& N_u = _ip_data[ip].N_u;
             auto const& dNdx_u = _ip_data[ip].dNdx_u;
 
-            auto const& N_p = _ip_data[ip].N_p;
-            auto const& dNdx_p = _ip_data[ip].dNdx_p;
+            //auto const& N_p = _ip_data[ip].N_p;
+            //auto const& dNdx_p = _ip_data[ip].dNdx_p;
 
             auto const x_coord =
                 interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
@@ -733,19 +734,19 @@ public:
         {
             x_position.setIntegrationPoint(ip);
             auto const& w = _ip_data[ip].integration_weight;
-            auto const& N = _ip_data[ip].N;
-            auto const& dNdx = _ip_data[ip].dNdx;
+            auto const& N_u = _ip_data[ip].N_u;
+            auto const& dNdx_u = _ip_data[ip].dNdx_u;
             auto const& d = _ip_data[ip].damage;
 
             auto const& x_coord =
                 interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
-                    _element, N);
+                    _element, N_u);
             GradientMatrixType G(DisplacementDim * DisplacementDim +
                                      (DisplacementDim == 2 ? 1 : 0),
                                  DisplacementDim * ShapeFunctionDisplacement::NPOINTS);
             Deformation::computeGMatrix<DisplacementDim,
                                         ShapeFunctionDisplacement::NPOINTS>(
-                dNdx, G, _is_axially_symmetric, N, x_coord);
+                dNdx_u, G, _is_axially_symmetric, N_u, x_coord);
 
             // TODO(naumov) Simplify divergence(u) computation.
             auto const Gu = (G * u).eval();
@@ -755,25 +756,28 @@ public:
         }
     }
 
+    //TODO fix material forces call
     std::vector<double> const& getMaterialForces(
         std::vector<double> const& local_x,
         std::vector<double>& nodal_values) override
     {
-        return ProcessLib::SmallDeformation::getMaterialForces<
+        return {};
+
+                /*ProcessLib::SmallDeformation::getMaterialForces<
             DisplacementDim, ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement,
             typename BMatricesType::NodalForceVectorType,
             NodalDisplacementVectorType, GradientVectorType,
             GradientMatrixType>(local_x, nodal_values, _integration_method,
-                                _ip_data, _element, _is_axially_symmetric);
+                                _ip_data, _element, _is_axially_symmetric);*/
     }
 
     Eigen::Map<const Eigen::RowVectorXd> getShapeMatrix(
         const unsigned integration_point) const override
     {
-        auto const& N = _secondary_data.N_u[integration_point];
+        auto const& N_u = _secondary_data.N_u[integration_point];
 
-        // assumes N is stored contiguously in memory
-        return Eigen::Map<const Eigen::RowVectorXd>(N.data(), N.size());
+        // assumes N_u is stored contiguously in memory
+        return Eigen::Map<const Eigen::RowVectorXd>(N_u.data(), N_u.size());
     }
 
     std::vector<double> const& getNodalValues(
@@ -794,15 +798,15 @@ public:
             x_position.setIntegrationPoint(ip);
             auto const& w = _ip_data[ip].integration_weight;
 
-            auto const& N = _ip_data[ip].N;
-            auto const& dNdx = _ip_data[ip].dNdx;
+            auto const& N_u = _ip_data[ip].N_u;
+            auto const& dNdx_u = _ip_data[ip].dNdx_u;
 
             auto const x_coord =
                 interpolateXCoordinate<ShapeFunctionDisplacement, ShapeMatricesTypeDisplacement>(
-                    _element, N);
+                    _element, N_u);
             auto const B = LinearBMatrix::computeBMatrix<
                 DisplacementDim, ShapeFunctionDisplacement::NPOINTS,
-                typename BMatricesType::BMatrixType>(dNdx, N, x_coord,
+                typename BMatricesType::BMatrixType>(dNdx_u, N_u, x_coord,
                                                      _is_axially_symmetric);
             auto& sigma = _ip_data[ip].sigma;
 
@@ -1073,9 +1077,9 @@ private:
     SmallDeformationNonlocalHydroMechanicsProcessData<DisplacementDim>& _process_data;
 
     std::vector<
-        IntegrationPointData<BMatricesType, ShapeMatricesTypeDisplacement, DisplacementDim>,
+        IntegrationPointData<BMatricesType, ShapeMatricesTypeDisplacement, ShapeMatricesTypePressure,DisplacementDim>,
         Eigen::aligned_allocator<IntegrationPointData<
-            BMatricesType, ShapeMatricesTypeDisplacement, DisplacementDim>>>
+            BMatricesType, ShapeMatricesTypeDisplacement, ShapeMatricesTypePressure, DisplacementDim>>>
         _ip_data;
 
     std::vector<double> _material_forces;
