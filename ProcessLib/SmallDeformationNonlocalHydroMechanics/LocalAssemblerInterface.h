@@ -78,6 +78,12 @@ struct SmallDeformationNonlocalHydroMechanicsLocalAssemblerInterface
         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& cache) const = 0;
 
+    virtual std::vector<double> const& getIntPtDarcyVelocity(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& cache) const = 0;
+
     // TODO move to NumLib::ExtrapolatableElement
     virtual unsigned getNumberOfIntegrationPoints() const = 0;
 

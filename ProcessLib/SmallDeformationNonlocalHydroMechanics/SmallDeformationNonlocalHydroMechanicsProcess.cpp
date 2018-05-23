@@ -142,6 +142,12 @@ void SmallDeformationNonlocalHydroMechanicsProcess<DisplacementDim>::
         makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                          &LocalAssemblerInterface::getIntPtDamage));
 
+    Process::_secondary_variables.addSecondaryVariable(
+        "velocity",
+        makeExtrapolator(mesh.getDimension(), getExtrapolator(),
+                         _local_assemblers,
+                         &LocalAssemblerInterface::getIntPtDarcyVelocity));
+
     // enable output of internal variables defined by material models
     auto const internal_variables =
         _process_data.material->getInternalVariables();
