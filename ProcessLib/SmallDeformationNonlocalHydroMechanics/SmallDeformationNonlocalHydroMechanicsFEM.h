@@ -1165,6 +1165,9 @@ private:
     SecondaryData<typename ShapeMatrices::ShapeType> _secondary_data;
     bool const _is_axially_symmetric;
 
+    static const int pressure_index = 0;
+    static const int pressure_size = ShapeFunctionPressure::NPOINTS;
+    static const int displacement_index = ShapeFunctionPressure::NPOINTS;
     static const int displacement_size =
         ShapeFunctionDisplacement::NPOINTS * DisplacementDim;
 };
