@@ -130,6 +130,13 @@ public:
             ip_data.N_u = sm_u.N;
             ip_data.dNdx_u = sm_u.dNdx;
 
+            auto const& sm_p = shape_matrices_p[ip];
+            _ip_data[ip].integration_weight =
+                _integration_method.getWeightedPoint(ip).getWeight() *
+                sm_p.integralMeasure * sm_p.detJ;
+            ip_data.N_p = sm_p.N;
+            ip_data.dNdx_p = sm_p.dNdx;
+
             // Initialize current time step values
             ip_data.sigma.setZero(MathLib::KelvinVector::KelvinVectorDimensions<
                                   DisplacementDim>::value);
