@@ -40,18 +40,18 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     BaseLib::ConfigTree const& config)
 {
     //! \ogs_file_param{prj__processes__process__type}
-    config.checkConfigParameter("type", "SMALL_DEFORMATION_NONLOCAL");
+    config.checkConfigParameter("type", "SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS");
     DBUG("Create SmallDeformationNonlocalHydroMechanicsProcess.");
 
     auto const staggered_scheme =
-        //! \ogs_file_param{prj__processes__process__HYDRO_MECHANICS__coupling_scheme}
+        //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__coupling_scheme}
         config.getConfigParameterOptional<std::string>("coupling_scheme");
     const bool use_monolithic_scheme =
         !(staggered_scheme && (*staggered_scheme == "staggered"));
 
     // Process variable.
 
-    //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION__process_variables}
+    //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__process_variables}
     auto const pv_config = config.getConfigSubtree("process_variables");
 
     ProcessVariable* variable_p;
@@ -62,9 +62,9 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     {
         auto per_process_variables = findProcessVariables(
             variables, pv_config,
-            {//! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__process_variables__pressure}
+            {//! \ogs_file_param_special{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__process_variables__pressure}
              "pressure",
-             //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__process_variables__displacement}
+             //! \ogs_file_param_special{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__process_variables__displacement}
              "displacement"});
         variable_p = &per_process_variables[0].get();
         variable_u = &per_process_variables[1].get();
@@ -110,11 +110,11 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     // Constitutive relation.
     // read type;
     auto const constitutive_relation_config =
-        //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION__constitutive_relation}
+        //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDROMECHANICS__constitutive_relation}
         config.getConfigSubtree("constitutive_relation");
 
     auto const type =
-        //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION__constitutive_relation__type}
+        //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDROMECHANICS__constitutive_relation__type}
         constitutive_relation_config.peekConfigParameter<std::string>("type");
 
     std::unique_ptr<MaterialLib::Solids::MechanicsBase<DisplacementDim>>
@@ -145,7 +145,7 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     // Intrinsic permeability
     auto& intrinsic_permeability = findParameter<double>(
         config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__intrinsic_permeability}
+        //! \ogs_file_param_special{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__intrinsic_permeability}
         "intrinsic_permeability", parameters, 1);
 
     DBUG("Use \'%s\' as intrinsic conductivity parameter.",
@@ -154,7 +154,7 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     // Storage coefficient
     auto& specific_storage = findParameter<double>(
         config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__specific_storage}
+        //! \ogs_file_param_special{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__specific_storage}
         "specific_storage", parameters, 1);
 
     DBUG("Use \'%s\' as storage coefficient parameter.",
@@ -163,7 +163,7 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     // Fluid viscosity
     auto& fluid_viscosity = findParameter<double>(
         config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__fluid_viscosity}
+        //! \ogs_file_param_special{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__fluid_viscosity}
         "fluid_viscosity", parameters, 1);
     DBUG("Use \'%s\' as fluid viscosity parameter.",
          fluid_viscosity.name.c_str());
@@ -171,14 +171,14 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     // Fluid density
     auto& fluid_density = findParameter<double>(
         config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__fluid_density}
+        //! \ogs_file_param_special{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__fluid_density}
         "fluid_density", parameters, 1);
     DBUG("Use \'%s\' as fluid density parameter.", fluid_density.name.c_str());
 
     // Biot coefficient
     auto& biot_coefficient = findParameter<double>(
         config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__biot_coefficient}
+        //! \ogs_file_param_special{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__biot_coefficient}
         "biot_coefficient", parameters, 1);
     DBUG("Use \'%s\' as Biot coefficient parameter.",
          biot_coefficient.name.c_str());
@@ -186,14 +186,14 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     // Porosity
     auto& porosity = findParameter<double>(
         config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__porosity}
+        //! \ogs_file_param_special{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__porosity}
         "porosity", parameters, 1);
     DBUG("Use \'%s\' as porosity parameter.", porosity.name.c_str());
 
     // Solid density
     auto& solid_density = findParameter<double>(
         config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__solid_density}
+        //! \ogs_file_param_special{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__solid_density}
         "solid_density", parameters, 1);
     DBUG("Use \'%s\' as solid density parameter.", solid_density.name.c_str());
 
@@ -201,7 +201,7 @@ std::unique_ptr<Process> createSmallDeformationNonlocalHydroMechanicsProcess(
     Eigen::Matrix<double, DisplacementDim, 1> specific_body_force;
     {
         std::vector<double> const b =
-            //! \ogs_file_param{prj__processes__process__HYDRO_MECHANICS__specific_body_force}
+            //! \ogs_file_param{prj__processes__process__SMALL_DEFORMATION_NONLOCAL_HYDRO_MECHANICS__specific_body_force}
             config.getConfigParameter<std::vector<double>>(
                 "specific_body_force");
         if (b.size() != DisplacementDim)
