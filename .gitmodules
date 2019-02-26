@@ -34,3 +34,6 @@
 [submodule "ThirdParty/exprtk"]
 	path = ThirdParty/exprtk
 	url = https://github.com/ArashPartow/exprtk.git
+[submodule "ThirdParty/MGIS"]
+	path = ThirdParty/MGIS
+	url = https://github.com/ufz/MFrontGenericInterfaceSupport.git
