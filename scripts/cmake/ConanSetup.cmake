@@ -62,6 +62,10 @@ if(OGS_USE_CVODE)
     set(CONAN_REQUIRES ${CONAN_REQUIRES} cvode/2.8.2@bilke/stable)
 endif()
 
+if(OGS_USE_MFRONT)
+    set(CONAN_REQUIRES ${CONAN_REQUIRES} tfel/3.2.0@bilke/testing)
+endif()
+
 if(OGS_BUILD_GUI)
     set(CONAN_REQUIRES ${CONAN_REQUIRES}
         Shapelib/1.3.0@bilke/stable
