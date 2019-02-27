@@ -25,7 +25,9 @@ append_source_files(SOURCES PorousMedium/UnsaturatedProperty/CapillaryPressure)
 append_source_files(SOURCES PorousMedium/UnsaturatedProperty/RelativePermeability)
 append_source_files(SOURCES TwoPhaseModels)
 
-add_subdirectory(SolidModels/MFront)
+if(OGS_USE_MFRONT)
+    add_subdirectory(SolidModels/MFront)
+endif()
 
 add_library(MaterialLib ${SOURCES})
 if(BUILD_SHARED_LIBS)
@@ -39,9 +41,14 @@ target_include_directories(MaterialLib
 )
 
 target_link_libraries(MaterialLib
-    PUBLIC MaterialLib_SolidModels_MFront
     PRIVATE MathLib MeshLib ParameterLib
 )
+
+if(OGS_USE_MFRONT)
+    target_link_libraries(MaterialLib
+        PUBLIC MaterialLib_SolidModels_MFront
+    )
+endif()
 
 if(OGS_USE_PCH)
     cotire(MaterialLib)
