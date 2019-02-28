@@ -15,7 +15,9 @@
 #include "CreateEhlers.h"
 #include "CreateLinearElasticIsotropic.h"
 #include "CreateLubby2.h"
+#ifdef OGS_USE_MFRONT
 #include "MFront/CreateMFront.h"
+#endif  // OGS_USE_MFRONT
 
 #include "MechanicsBase.h"
 
@@ -61,8 +63,14 @@ createConstitutiveRelation(
     }
     if (type == "MFront")
     {
+#ifdef OGS_USE_MFRONT
         return MaterialLib::Solids::MFront::createMFront<DisplacementDim>(
             parameters, config);
+#else   // OGS_USE_MFRONT
+        OGS_FATAL(
+            "OGS is compiled without MFront support. See OGS_USE_MFRONT CMake "
+            "option.");
+#endif  // OGS_USE_MFRONT
     }
     OGS_FATAL("Cannot construct constitutive relation of given type '%s'.",
               type.c_str());
