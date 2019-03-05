@@ -18,6 +18,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 include(cmake/modules/tfel)
 mfront_behaviours_check_library(OgsMFrontBehaviour
     Elasticity
+    StandardElasticityBrick
     MohrCoulombAbboSloan)
 
 target_include_directories(MaterialLib_SolidModels_MFront
