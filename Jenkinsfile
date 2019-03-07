@@ -113,7 +113,9 @@ pipeline {
                   "-DBUILD_SHARED_LIBS=${build_shared} " +
                   '-DOGS_CPU_ARCHITECTURE=generic ' +
                   '-DOGS_BUILD_UTILS=ON ' +
-                  '-DOGS_USE_CVODE=ON '
+                  '-DOGS_USE_CVODE=ON ' +
+                  '-DOGS_USE_MFRONT=ON ' +
+                  '-DOGS_USE_PYTHON=ON '
               }
               build {
                 target="package"
