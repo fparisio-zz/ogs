@@ -44,12 +44,12 @@ struct StandardElasticityBrickBehaviour
             mgis::behaviour::load("libOgsMFrontBehaviour.so",
                                   "StandardElasticityBrick", hypothesis(Dim));
 
-        using P = ProcessLib::ConstantParameter<double>;
+        using P = ParameterLib::ConstantParameter<double>;
         // Parameters used by mfront model in the order of appearence in the
         // .mfront file.
         static P const young_modulus("", 1e11);
         static P const poisson_ratio("", 1e9);
-        std::vector<ProcessLib::Parameter<double> const*> parameters{
+        std::vector<ParameterLib::Parameter<double> const*> parameters{
             &young_modulus, &poisson_ratio};
 
         auto result = std::make_unique<MFront::MFront<Dim>>(
@@ -65,12 +65,12 @@ struct ElasticBehaviour
         auto behaviour = mgis::behaviour::load("libOgsMFrontBehaviour.so",
                                                "Elasticity", hypothesis(Dim));
 
-        using P = ProcessLib::ConstantParameter<double>;
+        using P = ParameterLib::ConstantParameter<double>;
         // Parameters used by mfront model in the order of appearence in the
         // .mfront file.
         static P const young_modulus("", 1e11);
         static P const poisson_ratio("", 1e9);
-        std::vector<ProcessLib::Parameter<double> const*> parameters{
+        std::vector<ParameterLib::Parameter<double> const*> parameters{
             &young_modulus, &poisson_ratio};
 
         auto result = std::make_unique<MFront::MFront<Dim>>(
@@ -88,7 +88,7 @@ struct MohrCoulombAbboSloanBehaviour
             mgis::behaviour::load("libOgsMFrontBehaviour.so",
                                   "MohrCoulombAbboSloan", hypothesis(Dim));
 
-        using P = ProcessLib::ConstantParameter<double>;
+        using P = ParameterLib::ConstantParameter<double>;
         // Parameters used by mfront model in the order of appearence in the
         // .mfront file.
         static P const young_modulus("", 1e11);
@@ -98,7 +98,7 @@ struct MohrCoulombAbboSloanBehaviour
         static P const dilatancy_angle("", 10);
         static P const transition_angle("", 10);
         static P const tension_cut_off_parameter("", 0.5);
-        std::vector<ProcessLib::Parameter<double> const*> parameters{
+        std::vector<ParameterLib::Parameter<double> const*> parameters{
             &young_modulus,
             &poisson_ratio,
             &cohesion,
@@ -126,7 +126,7 @@ struct MaterialLib_SolidModelsMFront : public testing::Test
     KelvinVector<Dim> const sigma_prev = KelvinVector<Dim>::Zero();
 
     double t = 0;
-    ProcessLib::SpatialPosition x;
+    ParameterLib::SpatialPosition x;
     double dt = 0;
     double T = 0;
 
