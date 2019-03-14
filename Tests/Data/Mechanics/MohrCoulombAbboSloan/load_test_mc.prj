@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <OpenGeoSysProject>
     <meshes>
-        <mesh axially_symmetric="true">model_fine.vtu</mesh>
+        <mesh axially_symmetric="true">model_bias.vtu</mesh>
         <mesh axially_symmetric="true">geometry_left.vtu</mesh>
         <mesh axially_symmetric="true">geometry_right.vtu</mesh>
         <mesh axially_symmetric="true">geometry_top.vtu</mesh>
