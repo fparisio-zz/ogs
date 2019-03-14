@@ -93,7 +93,7 @@
         <parameter>
             <name>YoungModulus</name>
             <type>Constant</type>
-            <value>6778e6</value>
+            <value>6778</value>
         </parameter>
         <parameter>
             <name>PoissonRatio</name>
@@ -103,7 +103,7 @@
         <parameter>
             <name>Cohesion</name>
             <type>Constant</type>
-            <value>3.45e6</value>
+            <value>3.45</value>
         </parameter>
         <parameter>
             <name>FrictionAngle</name>
@@ -118,12 +118,12 @@
         <parameter>
             <name>TransitionAngle</name>
             <type>Constant</type>
-            <value>0</value>
+            <value>29</value>
         </parameter>
         <parameter>
             <name>TensionCutOffParameter</name>
             <type>Constant</type>
-            <value>0</value>
+            <value>1</value>
         </parameter>
         <parameter>
             <name>rho_sr</name>
