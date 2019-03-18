@@ -104,9 +104,13 @@ pipeline {
           }
           environment {
             OMP_NUM_THREADS = '1'
+            LD_LIBRARY_PATH = "$WORKSPACE/build/lib"
           }
           steps {
             script {
+              sh 'echo ld lib path: $LD_LIBRARY_PATH'
+              sh 'echo Workspace: ${WORKSPACE}'
+              sh 'echo Workspace: $WORKSPACE'
               sh 'git submodule sync'
               configure {
                 cmakeOptions =
