@@ -19,7 +19,8 @@ include(cmake/modules/tfel)
 mfront_behaviours_check_library(OgsMFrontBehaviour
     Elasticity
     StandardElasticityBrick
-    MohrCoulombAbboSloan)
+    MohrCoulombAbboSloan
+    BDT_Isothermal)
 
 target_include_directories(MaterialLib_SolidModels_MFront
     PUBLIC ThirdParty/MGIS/include
