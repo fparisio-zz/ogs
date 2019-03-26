@@ -58,7 +58,7 @@ Tref.setDefaultValue(293.15);
   const auto aux_ex = (1. - 1. / n_exp_T);
   const auto aux_arg = 1 + pow(alpha_p * (T_Solid - 10.), n_exp_T);
 
-  Rv = max(at_1 * T_Solid + at_2 * I1 / 3. + at_3, 1.0e-4);
+  Rv = max(at_1 * T_Solid - at_2 *  pow(pow(I1,2),0.5)  / 3. + at_3, 1.0e-4);
   auto Rpel = -(1. - q_h0) * pow((a + vp) / Rv, 2) +
               2. * (1. - q_h0) * (a + vp) / Rv + q_h0;
   if ((a + vp) > Rv)
@@ -99,7 +99,7 @@ Tref.setDefaultValue(293.15);
     a_ = a + theta * da;
     dam_ = dam + theta * ddam;
     vp_ = vp + theta * dvp;
-    Rv = max(at_1 * T_Solid + at_2 * trace(sig / (1 - dam)) / 3. + at_3, 1.0e-4);
+    Rv = max(at_1 * T_Solid - at_2 * pow(pow(trace(sig / (1 - dam)),2),0.5) / 3. + at_3, 1.0e-4);
     auto Rp_ = -(1. - q_h0) * pow((a_ + vp_) / Rv, 2) +
                2. * (1. - q_h0) * (a_ + vp_) / Rv + q_h0;
     if ((a_ + vp_) > Rv)
@@ -123,7 +123,10 @@ Tref.setDefaultValue(293.15);
                    (dpla_mult * (nq * dev_flow + np * iso_flow)));
     triax_p = iso_flow / dev_flow;
 
-    dam = max(min(1 - exp(-(((a + vp) - Rv) / alpha_d)), 1.0), 0.0);
+    if (trace(sig / (1 - dam))<0)
+        dam = max(min(1 - exp(-(((a + vp) - Rv) / alpha_d)), 1.0), 0.0);
+    else
+        dam = max(min(1 - exp(-(1000*a / alpha_d)), 1.0), 0.0);
     sig = (1 - dam) * sig;
   } else {
     feel = deel - deto + dvp * nvp;
