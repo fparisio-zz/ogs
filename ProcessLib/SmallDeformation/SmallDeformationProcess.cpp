@@ -12,9 +12,9 @@
 #include <cassert>
 #include <nlohmann/json.hpp>
 
-#include "BaseLib/Functional.h"
 #include "ProcessLib/Process.h"
 #include "ProcessLib/SmallDeformation/CreateLocalAssemblers.h"
+#include "ProcessLib/Utils/RegisterInternalVariables.h"
 
 #include "SmallDeformationFEM.h"
 
@@ -93,24 +93,27 @@ void SmallDeformationProcess<DisplacementDim>::initializeConcreteProcess(
             // by location order is needed for output
             NumLib::ComponentOrder::BY_LOCATION);
 
-    _secondary_variables.addSecondaryVariable(
-        "free_energy_density",
-        makeExtrapolator(1, getExtrapolator(), _local_assemblers,
-                         &LocalAssemblerInterface::getIntPtFreeEnergyDensity));
+    auto add_secondary_variable = [this](std::string const& name,
+                                         int const num_components,
+                                         auto function) {
+        _secondary_variables.addSecondaryVariable(
+            name,
+            makeExtrapolator(num_components, getExtrapolator(),
+                             _local_assemblers, function));
+    };
 
-    _secondary_variables.addSecondaryVariable(
-        "sigma",
-        makeExtrapolator(MathLib::KelvinVector::KelvinVectorType<
-                             DisplacementDim>::RowsAtCompileTime,
-                         getExtrapolator(), _local_assemblers,
-                         &LocalAssemblerInterface::getIntPtSigma));
+    add_secondary_variable("free_energy_density", 1,
+                           &LocalAssemblerInterface::getIntPtFreeEnergyDensity);
 
-    _secondary_variables.addSecondaryVariable(
-        "epsilon",
-        makeExtrapolator(MathLib::KelvinVector::KelvinVectorType<
-                             DisplacementDim>::RowsAtCompileTime,
-                         getExtrapolator(), _local_assemblers,
-                         &LocalAssemblerInterface::getIntPtEpsilon));
+    add_secondary_variable("sigma",
+                           MathLib::KelvinVector::KelvinVectorType<
+                               DisplacementDim>::RowsAtCompileTime,
+                           &LocalAssemblerInterface::getIntPtSigma);
+
+    add_secondary_variable("epsilon",
+                           MathLib::KelvinVector::KelvinVectorType<
+                               DisplacementDim>::RowsAtCompileTime,
+                           &LocalAssemblerInterface::getIntPtEpsilon);
 
     //
     // enable output of internal variables defined by material models
@@ -128,53 +131,8 @@ void SmallDeformationProcess<DisplacementDim>::initializeConcreteProcess(
         copy(begin(variables), end(variables),
              back_inserter(internal_variables));
     }
-
-    // Register the internal variables.
-    for (auto const& internal_variable : internal_variables)
-    {
-        auto const& name = internal_variable.name;
-        auto const& fct = internal_variable.getter;
-        auto const num_components = internal_variable.num_components;
-        DBUG("Registering internal variable %s.", name.c_str());
-
-        auto getIntPtValues = BaseLib::easyBind(
-            [fct, num_components](
-                LocalAssemblerInterface const& loc_asm,
-                const double /*t*/,
-                GlobalVector const& /*current_solution*/,
-                NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
-                std::vector<double>& cache) -> std::vector<double> const& {
-                const unsigned num_int_pts =
-                    loc_asm.getNumberOfIntegrationPoints();
-
-                cache.clear();
-                auto cache_mat = MathLib::createZeroedMatrix<Eigen::Matrix<
-                    double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
-                    cache, num_components, num_int_pts);
-
-                // TODO avoid the heap allocation (one per finite element)
-                std::vector<double> cache_column(num_int_pts);
-
-                for (unsigned i = 0; i < num_int_pts; ++i)
-                {
-                    auto const& state = loc_asm.getMaterialStateVariablesAt(i);
-
-                    auto const& int_pt_values = fct(state, cache_column);
-                    assert(int_pt_values.size() == num_components);
-                    auto const int_pt_values_vec =
-                        MathLib::toVector(int_pt_values);
-
-                    cache_mat.col(i).noalias() = int_pt_values_vec;
-                }
-
-                return cache;
-            });
-
-        _secondary_variables.addSecondaryVariable(
-            name,
-            makeExtrapolator(num_components, getExtrapolator(),
-                             _local_assemblers, std::move(getIntPtValues)));
-    }
+    Utils::registerInternalVariables<LocalAssemblerInterface>(
+        internal_variables, add_secondary_variable);
 
     // Set initial conditions for integration point data.
     for (auto const& ip_writer : _integration_point_writer)
