@@ -44,7 +44,9 @@ if (OGS_USE_MPI)
     OgsTest(WRAPPER mpirun -np 4 PROJECTFILE Mechanics/Linear/disc_with_hole.prj)
 endif()
 
-# Basic test that MFront works at all.
+if (OGS_USE_MFRONT)
+    OgsTest(PROJECTFILE Mechanics/MohrCoulombAbboSloan/load_test_mc.prj)
+
 # Linear elastic, no internal state variables, no external state variables.
 AddTest(
     NAME Mechanics_SDL_disc_with_hole_mfront
@@ -52,7 +54,7 @@ AddTest(
     EXECUTABLE ogs
     EXECUTABLE_ARGS disc_with_hole.prj
     TESTER vtkdiff
-    REQUIREMENTS OGS_USE_MFRONT AND NOT OGS_USE_MPI
+    REQUIREMENTS NOT OGS_USE_MPI
     DIFF_DATA
     disc_with_hole_expected_pcs_0_ts_4_t_1.000000.vtu disc_with_hole_pcs_0_ts_4_t_1.000000.vtu displacement displacement 1e-16 1e-16
     VIS disc_with_hole_pcs_0_ts_4_t_1.000000.vtu
@@ -65,7 +67,7 @@ AddTest(
     EXECUTABLE ogs
     EXECUTABLE_ARGS cube_1e0_dp.prj
     TESTER vtkdiff
-    REQUIREMENTS OGS_USE_MFRONT AND NOT OGS_USE_MPI
+    REQUIREMENTS NOT OGS_USE_MPI
     # The reference solution has been computed by OGS's Ehlers model.
     # See also the prj file.
     DIFF_DATA
@@ -82,8 +84,9 @@ AddTest(
     EXECUTABLE ogs
     EXECUTABLE_ARGS ring_plane_strain.prj
     TESTER vtkdiff
-    REQUIREMENTS OGS_USE_MFRONT AND NOT OGS_USE_MPI
+    REQUIREMENTS NOT OGS_USE_MPI
     DIFF_DATA
     ../../ring_plane_strain_pcs_0_ts_1_t_1.000000.vtu ring_plane_strain_pcs_0_ts_1_t_1.000000.vtu displacement displacement 1e-16 0
     ../../ring_plane_strain_pcs_0_ts_1_t_1.000000.vtu ring_plane_strain_pcs_0_ts_1_t_1.000000.vtu sigma sigma 1e-15 0
 )
+endif()
