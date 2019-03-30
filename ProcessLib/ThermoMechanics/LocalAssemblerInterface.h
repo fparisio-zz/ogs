@@ -18,6 +18,7 @@ namespace ProcessLib
 {
 namespace ThermoMechanics
 {
+template <int DisplacementDim>
 struct ThermoMechanicsLocalAssemblerInterface
     : public ProcessLib::LocalAssemblerInterface,
       public NumLib::ExtrapolatableElement

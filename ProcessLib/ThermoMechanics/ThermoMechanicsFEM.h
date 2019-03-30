@@ -86,7 +86,7 @@ struct SecondaryData
 template <typename ShapeFunction, typename IntegrationMethod,
           int DisplacementDim>
 class ThermoMechanicsLocalAssembler
-    : public ThermoMechanicsLocalAssemblerInterface
+    : public ThermoMechanicsLocalAssemblerInterface<DisplacementDim>
 {
 public:
     using ShapeMatricesType =

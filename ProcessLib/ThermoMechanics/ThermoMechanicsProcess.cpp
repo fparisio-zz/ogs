@@ -281,9 +281,8 @@ void ThermoMechanicsProcess<DisplacementDim>::preTimestepConcreteProcess(
     ProcessLib::ProcessVariable const& pv = getProcessVariables(process_id)[0];
 
     GlobalExecutor::executeSelectedMemberOnDereferenced(
-        &ThermoMechanicsLocalAssemblerInterface::preTimestep, _local_assemblers,
-        pv.getActiveElementIDs(), *_local_to_global_index_map, x, t,
-        dt);
+        &LocalAssemblerInterface::preTimestep, _local_assemblers,
+        pv.getActiveElementIDs(), *_local_to_global_index_map, x, t, dt);
 }
 
 template <int DisplacementDim>
@@ -296,7 +295,7 @@ void ThermoMechanicsProcess<DisplacementDim>::postTimestepConcreteProcess(
     ProcessLib::ProcessVariable const& pv = getProcessVariables(process_id)[0];
 
     GlobalExecutor::executeSelectedMemberOnDereferenced(
-        &ThermoMechanicsLocalAssemblerInterface::postTimestep,
+        &LocalAssemblerInterface::postTimestep,
         _local_assemblers, pv.getActiveElementIDs(),
         *_local_to_global_index_map, x);
 }
