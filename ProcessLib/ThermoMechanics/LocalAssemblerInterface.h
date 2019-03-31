@@ -11,6 +11,7 @@
 
 #include <vector>
 
+#include "MaterialLib/SolidModels/MechanicsBase.h"
 #include "NumLib/Extrapolation/ExtrapolatableElement.h"
 #include "ProcessLib/LocalAssemblerInterface.h"
 
@@ -45,6 +46,12 @@ struct ThermoMechanicsLocalAssemblerInterface
         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& cache) const = 0;
 
+    // TODO move to NumLib::ExtrapolatableElement
+    virtual unsigned getNumberOfIntegrationPoints() const = 0;
+
+    virtual typename MaterialLib::Solids::MechanicsBase<
+        DisplacementDim>::MaterialStateVariables const&
+    getMaterialStateVariablesAt(unsigned /*integration_point*/) const = 0;
 };
 
 }  // namespace ThermoMechanics

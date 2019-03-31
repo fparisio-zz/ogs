@@ -614,6 +614,19 @@ private:
         return ip_epsilon_m_values;
     }
 
+    unsigned getNumberOfIntegrationPoints() const override
+    {
+        return _integration_method.getNumberOfPoints();
+    }
+
+    typename MaterialLib::Solids::MechanicsBase<
+        DisplacementDim>::MaterialStateVariables const&
+    getMaterialStateVariablesAt(unsigned integration_point) const override
+    {
+        return *_ip_data[integration_point].material_state_variables;
+    }
+
+
     ThermoMechanicsProcessData<DisplacementDim>& _process_data;
 
     std::vector<

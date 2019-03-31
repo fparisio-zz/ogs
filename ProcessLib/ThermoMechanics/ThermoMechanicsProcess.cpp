@@ -14,6 +14,7 @@
 #include "BaseLib/Functional.h"
 #include "NumLib/DOF/DOFTableUtil.h"
 #include "ProcessLib/SmallDeformation/CreateLocalAssemblers.h"
+#include "ProcessLib/Utils/RegisterInternalVariables.h"
 
 #include "ThermoMechanicsFEM.h"
 
@@ -133,21 +134,44 @@ void ThermoMechanicsProcess<DisplacementDim>::initializeConcreteProcess(
             // by location order is needed for output
             NumLib::ComponentOrder::BY_LOCATION));
 
-    _secondary_variables.addSecondaryVariable(
-        "sigma",
-        makeExtrapolator(
-            MathLib::KelvinVector::KelvinVectorType<
-                DisplacementDim>::RowsAtCompileTime,
-            getExtrapolator(), _local_assemblers,
-            &ThermoMechanicsLocalAssemblerInterface::getIntPtSigma));
 
-    _secondary_variables.addSecondaryVariable(
-        "epsilon",
-        makeExtrapolator(
-            MathLib::KelvinVector::KelvinVectorType<
-                DisplacementDim>::RowsAtCompileTime,
-            getExtrapolator(), _local_assemblers,
-            &ThermoMechanicsLocalAssemblerInterface::getIntPtEpsilon));
+    auto add_secondary_variable = [this](std::string const& name,
+                                         int const num_components,
+                                         auto function) {
+        _secondary_variables.addSecondaryVariable(
+            name,
+            makeExtrapolator(num_components, getExtrapolator(),
+                             _local_assemblers, function));
+    };
+
+    add_secondary_variable("sigma",
+                           MathLib::KelvinVector::KelvinVectorType<
+                               DisplacementDim>::RowsAtCompileTime,
+                           &LocalAssemblerInterface::getIntPtSigma);
+
+    add_secondary_variable("epsilon",
+                           MathLib::KelvinVector::KelvinVectorType<
+                               DisplacementDim>::RowsAtCompileTime,
+                           &LocalAssemblerInterface::getIntPtEpsilon);
+
+    //
+    // enable output of internal variables defined by material models
+    //
+
+    // Collect the internal variables for all solid materials.
+    std::vector<typename MaterialLib::Solids::MechanicsBase<
+        DisplacementDim>::InternalVariable>
+        internal_variables;
+    for (auto const& material_id__solid_material :
+         _process_data.solid_materials)
+    {
+        auto const variables =
+            material_id__solid_material.second->getInternalVariables();
+        copy(begin(variables), end(variables),
+             back_inserter(internal_variables));
+    }
+    Utils::registerInternalVariables<LocalAssemblerInterface>(
+        internal_variables, add_secondary_variable);
 
     // Set initial conditions for integration point data.
     for (auto const& ip_writer : _integration_point_writer)
