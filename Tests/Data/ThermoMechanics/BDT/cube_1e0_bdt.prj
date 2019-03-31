@@ -42,6 +42,13 @@
                 <temperature>temperature</temperature>
             </process_variables>
             <secondary_variables>
+                <secondary_variable type="static" internal_name="ElasticStrain" output_name="ElasticStrain"/>
+                <secondary_variable type="static" internal_name="pla_mult" output_name="pla_mult"/>
+                <secondary_variable type="static" internal_name="a" output_name="a"/>
+                <secondary_variable type="static" internal_name="dam" output_name="dam"/>
+                <secondary_variable type="static" internal_name="Rv" output_name="Rv"/>
+                <secondary_variable type="static" internal_name="triax_p" output_name="triax_p"/>
+                <secondary_variable type="static" internal_name="vp" output_name="vp"/>
                 <secondary_variable type="static" internal_name="sigma" output_name="sigma"/>
                 <secondary_variable type="static" internal_name="epsilon" output_name="epsilon"/>
             </secondary_variables>
@@ -87,6 +94,13 @@
                 <variable>temperature</variable>
                 <variable>sigma</variable>
                 <variable>epsilon</variable>
+                <variable>ElasticStrain</variable>
+                <variable>pla_mult</variable>
+                <variable>a</variable>
+                <variable>dam</variable>
+                <variable>Rv</variable>
+                <variable>triax_p</variable>
+                <variable>vp</variable>
             </variables>
         </output>
     </time_loop>
