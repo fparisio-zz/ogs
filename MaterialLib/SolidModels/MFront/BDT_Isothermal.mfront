@@ -15,7 +15,8 @@ alpha.setGlossaryName("ThermalExpansion");
 @MaterialProperty real n_exp_T;
 @MaterialProperty real q_h0;
 @MaterialProperty real chi_h;
-@MaterialProperty real alpha_d;
+@MaterialProperty real alpha_d_c;
+@MaterialProperty real alpha_d_t;
 @MaterialProperty real h_d;
 @MaterialProperty real Qact;
 @MaterialProperty real A_creep;
@@ -34,6 +35,7 @@ alpha.setGlossaryName("ThermalExpansion");
 @StateVariable real Rv;
 @StateVariable real triax_p;
 @StateVariable real vp;
+@StateVariable real m_g;
 
 @LocalVariable stress lambda;
 @LocalVariable stress mu;
@@ -110,6 +112,12 @@ Tref.setDefaultValue(293.15);
                        (m_0 * aux - 1) * power<2>(q_h);
 
     const auto big_aux = power<2>(aux) * (1 - q_h) + seq / f_c;
+
+    // flow rule
+    const auto f_t= f_c/20;
+    const auto A_g= 3.* q_h * f_t / f_c + m_0 /2.;
+    const auto B_g= (q_h/3.* (1+ f_t / f_c))/(log(A_g)-log(2.*0.85-1.)-log(3.*q_h+m_0/2.)+log(0.85+1.));
+    m_g= max((A_g*B_g*exp((trace(sig / (1 - dam))/3.-q_h*f_t/3.)/(B_g*f_c))),0.0); 
     const auto dev_flow =
         power<2>(q_h) * m_0 / (2. * f_c * seq) +
         2. * ((1 - q_h) * aux / (f_c * seq) + 3. / (2. * f_c * seq)) * big_aux;
@@ -123,10 +131,18 @@ Tref.setDefaultValue(293.15);
                    (dpla_mult * (nq * dev_flow + np * iso_flow)));
     triax_p = iso_flow / dev_flow;
 
-    if (trace(sig / (1 - dam))<0)
-        dam = max(min(1 - exp(-(((a + vp) - Rv) / alpha_d)), 1.0), 0.0);
-    else
-        dam = max(min(1 - exp(-(1000*a / alpha_d)), 1.0), 0.0);
+    real dc;
+    real dt;
+    dt=0;
+    dc=0;
+    if (trace(sig / (1 - dam))<0){
+        dc = max(min(1 - exp(-(((a + vp) - Rv) / alpha_d_c)), 1.0), 0.0);
+        }
+    else{
+        dt = max(min(1 - exp(-(a / alpha_d_t)), 1.0), 0.0);
+        }
+    dam = 1.-(1-dc)*(1-dt);
+
     sig = (1 - dam) * sig;
   } else {
     feel = deel - deto + dvp * nvp;
