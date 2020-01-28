@@ -145,7 +145,7 @@ Tref.setDefaultValue(293.15);
         fdamt = ddamt - damt;
         }
     fdam = ddam - (1-damt)*ddamc - (1-damc)*ddamt;
-    if ddam<0{
+    if (ddam<0){
     ddam=0;
     }
 
