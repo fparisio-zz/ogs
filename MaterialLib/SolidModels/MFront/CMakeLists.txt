@@ -17,7 +17,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
                       "${PROJECT_SOURCE_DIR}/ThirdParty/MGIS")
 include(cmake/modules/tfel)
 mfront_behaviours_check_library(OgsMFrontBehaviour
-                                BDT
+	                        BDT_Isothermal
+	                        BDT
                                 DruckerPrager
                                 Elasticity
                                 MohrCoulombAbboSloan
