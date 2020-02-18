@@ -32,8 +32,6 @@ alpha.setGlossaryName("ThermalExpansion");
 @StateVariable real pla_mult;
 @StateVariable real a;
 @StateVariable real dam;
-@StateVariable real damt;
-@StateVariable real damc;
 @StateVariable real Rv;
 @StateVariable real triax_p;
 @StateVariable real vp;
@@ -99,15 +97,10 @@ Tref.setDefaultValue(293.15);
     real a_;
     real dam_;
     real vp_;
-    real damc_;
-    real damt_;
 
     a_ = a + theta * da;
     dam_ = dam + theta * ddam;
     vp_ = vp + theta * dvp;
-    damt_ = damt + theta * ddamt;
-    damc_ = damc + theta * ddamc;
-    
     Rv = max(at_1 * (T_Solid-273.15) + at_2 * trace(sig / (1 - dam)) / 3. + at_3, 1.0e-4);
     auto Rp_ = -(1. - q_h0) * pow((a_ + vp_) / Rv, 2) +
                2. * (1. - q_h0) * (a_ + vp_) / Rv + q_h0;
@@ -132,22 +125,24 @@ Tref.setDefaultValue(293.15);
                    (dpla_mult * (nq * dev_flow + np * iso_flow)));
     triax_p = iso_flow / dev_flow;
 
-    real damc;
-    real damt;
-    damt=0;
-    damc=0;
+    real dc;
+    real dt;
+    dt=0;
+    dc=0;
+    real ddc;
+    real ddt;
+    ddt=0;
+    ddc=0;
     if (trace(sig / (1 - dam))<0){
-        damc = max(min(1 - exp(-(((a + vp) - Rv) / alpha_d_c)), 1.0), 0.0);
-        fdamc = ddamc - damc;
+        dc = max(min(1 - exp(-(((a + vp) - Rv) / alpha_d_c)), 1.0), 0.0);
+        ddc = max(((exp(-(((-a - vp) + Rv) / alpha_d_c))*(da + dvp - dRv))/alpha_d_c),0.0);
         }
     else{
-        damt = max(min(1 - exp(-(a / alpha_d_t)), 1.0), 0.0);
-        fdamt = ddamt - damt;
+        dt = max(min(1 - exp(-(a / alpha_d_t)), 1.0), 0.0);
+        ddt = max(((exp(-(((-a )) / alpha_d_t))*(da ))/alpha_d_t),0.0);
         }
-    fdam = ddam - (1-damt)*ddamc - (1-damc)*ddamt;
-    if (ddam<0){
-    ddam=0;
-    }
+    fdam = ddam - (1-dt)*ddc+(1-dc)*ddt;
+    //dam = 1.-(1-ddc)*(1-ddt);
 
     sig = (1 - dam) * sig;
   } else {
