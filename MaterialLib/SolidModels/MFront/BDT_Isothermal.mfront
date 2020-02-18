@@ -113,7 +113,7 @@ Tref.setDefaultValue(293.15);
                2. * (1. - q_h0) * (a_ + vp_) / Rv + q_h0;
     if ((a_ + vp_) > Rv)
       Rp_ = 1.0;
-    const auto q_h = Rp_ / (pow(aux_arg, aux_ex));
+    q_h = Rp_ / (pow(aux_arg, aux_ex));
 
     const auto yield = power<2>((1. - q_h) * power<2>(aux) + seq / f_c) +
                        (m_0 * aux - 1) * power<2>(q_h);
