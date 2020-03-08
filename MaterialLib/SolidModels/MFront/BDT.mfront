@@ -31,10 +31,12 @@ alpha.setGlossaryName("ThermalExpansion");
 @StateVariable real pla_mult;
 @StateVariable real a;
 @StateVariable real dam;
+@StateVariable real damc;
 @StateVariable real Rv;
-@StateVariable real triax_p;
+@StateVariable real damt;
 @StateVariable real vp;
-@StateVariable real m_g;
+@StateVariable real q_h;
+@StateVariable real eps_p_vol;
 
 @LocalVariable stress lambda;
 @LocalVariable stress mu;
@@ -45,7 +47,12 @@ alpha.setGlossaryName("ThermalExpansion");
 // Tref.setDefaultValue(293.15);
 
 @InitLocalVariables {
-  const auto y2 = El_1 * power<2>((T-273.15)) + El_2 * (T-273.15) + El_3;
+  real y2;
+  if ((T_Solid-273.15)<400.0){
+  y2 = El_1 * power<2>(400.0) + El_2 * 400.0 + El_3;  
+  }else{
+  y2 = El_1 * power<2>(T_Solid-273.15) + El_2 * (T_Solid-273.15) + El_3;
+  }
   lambda = computeLambda(young * y2, nu);
   mu = computeMu(young * y2, nu);
   StressStensor sigel(lambda * trace(eel + deto) * Stensor::Id() +
@@ -65,7 +72,7 @@ alpha.setGlossaryName("ThermalExpansion");
   if ((a + vp) > Rv)
     Rpel = 1.0;
 
-  const auto q_h = Rpel / (pow(aux_arg, aux_ex));
+  q_h = Rpel / (pow(aux_arg, aux_ex));
 
   Fel = power<2>((1. - q_h) * power<2>(aux) + seq / f_c) +
         (m_0 * aux - 1) * power<2>(q_h);
@@ -105,7 +112,7 @@ alpha.setGlossaryName("ThermalExpansion");
                2. * (1. - q_h0) * (a_ + vp_) / Rv + q_h0;
     if ((a_ + vp_) > Rv)
       Rp_ = 1.0;
-    const auto q_h = Rp_ / (pow(aux_arg, aux_ex));
+    q_h = Rp_ / (pow(aux_arg, aux_ex));
 
     const auto yield = power<2>((1. - q_h) * power<2>(aux) + seq / f_c) +
                        (m_0 * aux - 1) * power<2>(q_h);
@@ -122,19 +129,20 @@ alpha.setGlossaryName("ThermalExpansion");
     fpla_mult = yield / young;
     fa = da - sqrt(2. / 3. * (dpla_mult * (nq * dev_flow + np * iso_flow)) |
                    (dpla_mult * (nq * dev_flow + np * iso_flow)));
-    triax_p = iso_flow / dev_flow;
 
-    real dc;
-    real dt;
-    dt=0;
-    dc=0;
+    feps_p_vol = deps_p_vol - dpla_mult * iso_flow;
+
+    real n_exp_dam;
+    n_exp_dam = 3.0;
     if (trace(sig / (1 - dam))<0){
-        dc = max(min(1 - exp(-(((a + vp) - Rv) / alpha_d_c)), 1.0), 0.0);
+        //fdc = ddc - max(min(1 - exp(-(((a + vp)*pow((q_h) , n_exp_dam) ) / alpha_d_c)), 1.0), 0.0);
+        //fdc = ddc - max(- exp(-(((a + vp)*pow((q_h) , n_exp_dam) ) / alpha_d_c))*((-pow((q_h) , n_exp_dam)*(da+dvp))/alpha_d_c-(-n_exp_dam*dq_h*pow((q_h) , n_exp_dam-1)*(a+vp))/alpha_d_c), 0.0);
+        fdamc = ddamc - max((exp(-((a + vp ) / alpha_d_c))*(da+dvp)*pow((q_h) , n_exp_dam))/alpha_d_c, 0.0);
         }
     else{
-        dt = max(min(1 - exp(-(a / alpha_d_t)), 1.0), 0.0);
+        fdamt = ddamt - max((exp(-((a ) / alpha_d_t))*(da))/alpha_d_t, 0.0);
         }
-    dam = 1.-(1-dc)*(1-dt);
+    dam= max(min(1.-(1-damc)*(1-damt), 1.0), 0.0);
 
     sig = (1 - dam) * sig;
   } else {
