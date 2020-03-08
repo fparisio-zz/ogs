@@ -48,10 +48,10 @@ alpha.setGlossaryName("ThermalExpansion");
 
 @InitLocalVariables {
   real y2;
-  if ((T_Solid-273.15)<400.0){
+  if ((T-273.15)<400.0){
   y2 = El_1 * power<2>(400.0) + El_2 * 400.0 + El_3;  
   }else{
-  y2 = El_1 * power<2>(T_Solid-273.15) + El_2 * (T_Solid-273.15) + El_3;
+  y2 = El_1 * power<2>(T-273.15) + El_2 * (T-273.15) + El_3;
   }
   lambda = computeLambda(young * y2, nu);
   mu = computeMu(young * y2, nu);
