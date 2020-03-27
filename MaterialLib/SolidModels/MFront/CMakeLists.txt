@@ -19,6 +19,7 @@ include(cmake/modules/tfel)
 mfront_behaviours_check_library(OgsMFrontBehaviour
 	                        BDT_Isothermal
 	                        BDT
+				NortonDruckerPrager
                                 DruckerPrager
                                 Elasticity
                                 MohrCoulombAbboSloan
