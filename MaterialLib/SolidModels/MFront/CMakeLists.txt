@@ -18,7 +18,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 include(cmake/modules/tfel)
 mfront_behaviours_check_library(OgsMFrontBehaviour
 	                        BDT_Isothermal
-	                        BDT
+	                        BDT_Isothermal_K
+				BDT
                                 DruckerPrager
                                 Elasticity
                                 MohrCoulombAbboSloan
