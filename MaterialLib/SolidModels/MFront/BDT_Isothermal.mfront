@@ -1,5 +1,5 @@
 @Parser Implicit;
-@Behaviour BDT_Isothermal;
+@Behaviour BDT_Isothermal_K;
 @Algorithm NewtonRaphson_NumericalJacobian;
 @Theta 1.;
 
@@ -91,7 +91,7 @@ Tref.setDefaultValue(293.15);
   if (seq > 1.e-15) {
     nvp = 1.5 * s_dev / seq;
   }
-  fvp -= dt * A_creep * exp(-Qact / 8.3144598 / (T_Solid-273.15)) * pow(seq, n_creep);
+  fvp -= dt * A_creep * exp(-Qact / 8.3144598 / (T_Solid)) * pow(seq, n_creep);
 
   if (Fel > 0) {
     const real pla_mult_ = pla_mult + theta * dpla_mult;
