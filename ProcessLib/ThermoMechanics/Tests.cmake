@@ -321,6 +321,42 @@ AddTest(
     cthex_ref.vtu  cube_1e0_lin_pcs_0_ts_10_t_10.000000.vtu sigma_10 sigma 1e-8  0
 )
 
+# Tests for BDT model.
+AddTest(
+    NAME ThermoMechanics_BDT_1
+    PATH ThermoMechanics/BDT/3D_Samples/
+    EXECUTABLE ogs
+    EXECUTABLE_ARGS cube_1e0_bdt.prj
+    TESTER vtkdiff
+    REQUIREMENTS NOT OGS_USE_MPI
+    DIFF_DATA
+    vtu/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu displacement displacement 1e-14 0
+    vtu/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu sigma sigma 1e-14 0
+    vtu/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu epsilon epsilon 1e-14 0
+    vtu/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu dam dam 1e-14 0
+    vtu/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu a a 1e-14 0
+    vtu/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu vp vp 1e-14 0
+)
+
+AddTest(
+    NAME ThermoMechanics_BDT_2
+    PATH ThermoMechanics/BDT/3D_Samples_Heating/
+    EXECUTABLE ogs
+    EXECUTABLE_ARGS cube_1e0_bdt.prj
+    TESTER vtkdiff
+    REQUIREMENTS NOT OGS_USE_MPI
+    DIFF_DATA
+    vtu/out_cube_pcs_0_ts_30_t_1236.499810.vtu out_cube_pcs_0_ts_30_t_1236.499810.vtu displacement displacement 1e-14 0
+    vtu/out_cube_pcs_0_ts_30_t_1236.499810.vtu out_cube_pcs_0_ts_30_t_1236.499810.vtu sigma sigma 1e-14 0
+    vtu/out_cube_pcs_0_ts_30_t_1236.499810.vtu out_cube_pcs_0_ts_30_t_1236.499810.vtu epsilon epsilon 1e-14 0
+    vtu/out_cube_pcs_0_ts_30_t_1236.499810.vtu out_cube_pcs_0_ts_30_t_1236.499810.vtu dam dam 1e-14 0
+    vtu/out_cube_pcs_0_ts_30_t_1236.499810.vtu out_cube_pcs_0_ts_30_t_1236.499810.vtu a a 1e-14 0
+    vtu/out_cube_pcs_0_ts_30_t_1236.499810.vtu out_cube_pcs_0_ts_30_t_1236.499810.vtu vp vp 1e-14 0
+    vtu/out_cube_pcs_0_ts_30_t_1236.499810.vtu out_cube_pcs_0_ts_30_t_1236.499810.vtu temperature temperature 1e-14 0
+)
+
+
+
 # Test of a creep law.
 AddTest(
     NAME ThermoMechanics_BDT_mfront
