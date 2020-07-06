@@ -94,6 +94,94 @@ AddTest(
     ../../ring_plane_strain_pcs_0_ts_1_t_1.000000.vtu ring_plane_strain_pcs_0_ts_1_t_1.000000.vtu displacement displacement 1e-16 0
     ../../ring_plane_strain_pcs_0_ts_1_t_1.000000.vtu ring_plane_strain_pcs_0_ts_1_t_1.000000.vtu sigma sigma 1e-15 0
 )
+
+# Tests for BDT model.
+AddTest(
+    NAME SmallDeformation_BDT_50_400
+    PATH Mechanics/BDT/3D_1_element_50_400/
+    EXECUTABLE ogs
+    EXECUTABLE_ARGS triaxial_50_400.prj
+    TESTER vtkdiff
+    REQUIREMENTS NOT OGS_USE_MPI
+    DIFF_DATA
+    vtu_test/out_cube_pcs_0_ts_27_t_952.799535.vtu out_cube_pcs_0_ts_27_t_952.799535.vtu displacement displacement 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_27_t_952.799535.vtu out_cube_pcs_0_ts_27_t_952.799535.vtu sigma sigma 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_27_t_952.799535.vtu out_cube_pcs_0_ts_27_t_952.799535.vtu epsilon epsilon 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu displacement displacement 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu sigma sigma 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu epsilon epsilon 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu dam dam 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu a a 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_78_t_10000.000000.vtu out_cube_pcs_0_ts_78_t_10000.000000.vtu vp vp 1e-14 0
+)
+
+AddTest(
+    NAME SmallDeformation_BDT_50_800
+    PATH Mechanics/BDT/3D_1_element_50_800/
+    EXECUTABLE ogs
+    EXECUTABLE_ARGS triaxial_50_800.prj
+    TESTER vtkdiff
+    REQUIREMENTS NOT OGS_USE_MPI
+    DIFF_DATA
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu displacement displacement 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu sigma sigma 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu epsilon epsilon 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu dam dam 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu a a 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu vp vp 1e-14 0
+)
+
+AddTest(
+    NAME SmallDeformation_BDT_350_400
+    PATH Mechanics/BDT/3D_1_element_350_400/
+    EXECUTABLE ogs
+    EXECUTABLE_ARGS triaxial_350_400.prj
+    TESTER vtkdiff
+    REQUIREMENTS NOT OGS_USE_MPI
+    DIFF_DATA
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu displacement displacement 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu sigma sigma 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu epsilon epsilon 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu dam dam 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu a a 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu vp vp 1e-14 0
+)
+
+AddTest(
+    NAME SmallDeformation_BDT_350_800
+    PATH Mechanics/BDT/3D_1_element_350_800/
+    EXECUTABLE ogs
+    EXECUTABLE_ARGS triaxial_350_800.prj
+    TESTER vtkdiff
+    REQUIREMENTS NOT OGS_USE_MPI
+    DIFF_DATA
+    vtu_test/out_cube_pcs_0_ts_26_t_857.454123.vtu out_cube_pcs_0_ts_26_t_857.454123.vtu displacement displacement 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_26_t_857.454123.vtu out_cube_pcs_0_ts_26_t_857.454123.vtu sigma sigma 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_26_t_857.454123.vtu out_cube_pcs_0_ts_26_t_857.454123.vtu epsilon epsilon 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu displacement displacement 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu sigma sigma 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu epsilon epsilon 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu dam dam 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu a a 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_51_t_10000.000000.vtu out_cube_pcs_0_ts_51_t_10000.000000.vtu vp vp 1e-14 0
+)
+
+AddTest(
+    NAME SmallDeformation_BDT_50_400_slow
+    PATH Mechanics/BDT/3D_1_element_50_400_slow/
+    EXECUTABLE ogs
+    EXECUTABLE_ARGS triaxial_50_400_slow.prj
+    TESTER vtkdiff
+    REQUIREMENTS NOT OGS_USE_MPI
+    DIFF_DATA
+    vtu_test/out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu displacement displacement 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu sigma sigma 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu epsilon epsilon 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu dam dam 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu a a 1e-14 0
+    vtu_test/out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu out_cube_pcs_0_ts_300_t_100000000000000.000000.vtu vp vp 1e-14 0
+)
+
 endif()
 
 AddTest(
