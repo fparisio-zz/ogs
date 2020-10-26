@@ -1,5 +1,5 @@
 @Parser Implicit;
-@Behaviour BDT_Isothermal_K;
+@Behaviour BDT_Isothermal;
 @Algorithm NewtonRaphson_NumericalJacobian;
 @Theta 1.;
 
