@@ -138,12 +138,14 @@ Tref.setDefaultValue(293.15);
     if (trace(sig / (1 - dam))<0){
         //fdc = ddc - max(min(1 - exp(-(((a + vp)*pow((q_h) , n_exp_dam) ) / alpha_d_c)), 1.0), 0.0);
         //fdc = ddc - max(- exp(-(((a + vp)*pow((q_h) , n_exp_dam) ) / alpha_d_c))*((-pow((q_h) , n_exp_dam)*(da+dvp))/alpha_d_c-(-n_exp_dam*dq_h*pow((q_h) , n_exp_dam-1)*(a+vp))/alpha_d_c), 0.0);
-        fdamc = ddamc - max((exp(-((a + vp ) / alpha_d_c))*(da+dvp)*pow((q_h) , n_exp_dam))/alpha_d_c, 0.0);
+        fdamc = ddamc - pow(pow((exp(-((a + vp ) / alpha_d_c))*(da+dvp)*pow((q_h) , n_exp_dam))/alpha_d_c, 2.0),0.5);
+        //fdamc = ddamc - max((exp(-((a + vp ) / alpha_d_c))*(da+dvp)*pow((q_h) , n_exp_dam))/alpha_d_c, 0.0);        
         }
     else{
         fdamt = ddamt - max((exp(-((a ) / alpha_d_t))*(da))/alpha_d_t, 0.0);
         }
-    dam= max(min(1.-(1-damc)*(1-damt), 1.0), 0.0);
+    //dam= max(min(1.-(1-damc)*(1-damt), 1.0), 0.0);
+    fdam = ddam - max(min((-ddamc*(damt-1)-ddamt*(damc-1)), 1.0), 0.0);
 
     sig = (1 - dam) * sig;
   } else {
