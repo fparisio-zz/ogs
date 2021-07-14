@@ -48,8 +48,8 @@ alpha.setGlossaryName("ThermalExpansion");
 
 @InitLocalVariables {
   real y2;
-  if ((T-273.15)<400.0){
-  y2 = El_1 * power<2>(400.0) + El_2 * 400.0 + El_3;  
+  if ((T-273.15)<20.0){
+  y2 = El_1 * power<2>(20.0) + El_2 * 20.0 + El_3;  
   }else{
   y2 = El_1 * power<2>(T-273.15) + El_2 * (T-273.15) + El_3;
   }
@@ -133,7 +133,7 @@ alpha.setGlossaryName("ThermalExpansion");
     feps_p_vol = deps_p_vol - dpla_mult * iso_flow;
 
     real n_exp_dam;
-    n_exp_dam = 3.0;
+    n_exp_dam = 1.0;
     if (trace(sig / (1 - dam))<0){
         //fdc = ddc - max(min(1 - exp(-(((a + vp)*pow((q_h) , n_exp_dam) ) / alpha_d_c)), 1.0), 0.0);
         //fdc = ddc - max(- exp(-(((a + vp)*pow((q_h) , n_exp_dam) ) / alpha_d_c))*((-pow((q_h) , n_exp_dam)*(da+dvp))/alpha_d_c-(-n_exp_dam*dq_h*pow((q_h) , n_exp_dam-1)*(a+vp))/alpha_d_c), 0.0);
