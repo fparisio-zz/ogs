@@ -38,6 +38,7 @@ alpha.setGlossaryName("ThermalExpansion");
 @StateVariable real vp;
 @StateVariable real q_h;
 @StateVariable real eps_p_vol;
+@StateVariable real E_D;
 
 @LocalVariable stress lambda;
 @LocalVariable stress mu;
@@ -146,8 +147,12 @@ Tref.setDefaultValue(293.15);
         }
     //dam= max(min(1.-(1-damc)*(1-damt), 1.0), 0.0);
     fdam = ddam - max(min((-ddamc*(damt-1)-ddamt*(damc-1)), 1.0), 0.0);
-
     sig = (1 - dam) * sig;
+
+    const auto tr = trace(eval(eto+deto));
+    const auto Y  = tr*tr*lambda/2+mu*(eval(eto+deto)|eval(eto+deto));
+    fE_D = dE_D - (Y * ddam + (sig | (dpla_mult * (nq * dev_flow + np * iso_flow))));
+
   } else {
     feel = deel - deto + dvp * nvp;
   }
